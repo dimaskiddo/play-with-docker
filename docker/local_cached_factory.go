@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/storage"
+	"github.com/docker/docker/client"
 )
 
 type localCachedFactory struct {

@@ -12,13 +12,13 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/dimaskiddo/play-with-docker/config"
+	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/gorilla/mux"
-	"github.com/dimaskiddo/play-with-docker/config"
-	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/shirou/gopsutil/load"
 	"github.com/urfave/negroni"
 )

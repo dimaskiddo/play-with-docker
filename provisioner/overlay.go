@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"strings"
 
-	dtypes "github.com/docker/docker/api/types"
 	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	dtypes "github.com/docker/docker/api/types"
 )
 
 type overlaySessionProvisioner struct {

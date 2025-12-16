@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/storage"
-	"github.com/satori/go.uuid"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
+	uuid "github.com/satori/go.uuid"
 )
 
 var upgrader = websocket.Upgrader{

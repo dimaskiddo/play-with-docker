@@ -27,7 +27,9 @@ RUN apk --no-cache --update upgrade \
     && apk --no-cache --update add \
         ca-certificates \
         openssh-client \
-    && mkdir -p /usr/app/play-with-docker/sessions
+    && mkdir -p \
+        /usr/app/play-with-docker/certs \
+        /usr/app/play-with-docker/sessions
 
 COPY --from=go-builder /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
 COPY --from=go-builder /usr/src/app/play-with-docker /usr/bin/play-with-docker

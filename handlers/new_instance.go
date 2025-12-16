@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/dimaskiddo/play-with-docker/provisioner"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/gorilla/mux"
 )
 
 func NewInstance(rw http.ResponseWriter, req *http.Request) {

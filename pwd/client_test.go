@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	dtypes "github.com/docker/docker/api/types"
 	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/event"
@@ -13,6 +12,7 @@ import (
 	"github.com/dimaskiddo/play-with-docker/provisioner"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/storage"
+	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

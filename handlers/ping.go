@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/dimaskiddo/play-with-docker/config"
+	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/load"
 )
 

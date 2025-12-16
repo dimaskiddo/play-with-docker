@@ -7,11 +7,11 @@ import (
 	"io"
 	"testing"
 
-	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/storage"
+	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

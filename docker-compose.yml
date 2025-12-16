@@ -16,14 +16,6 @@ services:
     container_name: 'play-with-docker'
     healthcheck:
       disable: true
-    command:
-      - play-with-docker
-      - -name
-      - play-with-docker
-      - -l2-name
-      - play-with-docker-router
-      - -save
-      - /usr/app/play-with-docker/sessions/session
     networks:
       - play-with-docker
     ports:
@@ -42,21 +34,11 @@ services:
     container_name: 'play-with-docker-router'
     healthcheck:
       disable: true
-    command:
-      - play-with-docker-l2
-      - -name
-      - play-with-docker
-      - -l2-name
-      - play-with-docker-router
-      - -save
-      - /usr/app/play-with-docker/sessions/networks
-      - -ssh-key-path
-      - /etc/ssh/ssh_host_rsa_key
     networks:
       - play-with-docker
     ports:
-      - "8022:22"
-      - "8053:53"
+      - "2222:22"
+      - "5353:53"
       - "443:443"
     env_file:
       - .env

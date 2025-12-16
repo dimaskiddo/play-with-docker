@@ -28,11 +28,13 @@ RUN apk --no-cache --update upgrade \
     && apk --no-cache --update add \
         ca-certificates \
         openssh-client \
-    && mkdir -p /usr/app/play-with-docker/sessions
+    && mkdir -p \
+        /usr/app/play-with-docker/certs \
+        /usr/app/play-with-docker/sessions
 
 COPY --from=go-builder /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
 COPY --from=go-builder /usr/src/app/router/l2/play-with-docker-l2 /usr/bin/play-with-docker-l2
 
 EXPOSE 22 53 443 8080
 
-CMD ["play-with-docker-l2", "-ssh_key_path", "/etc/ssh/ssh_host_rsa_key"]
+CMD ["play-with-docker-l2"]

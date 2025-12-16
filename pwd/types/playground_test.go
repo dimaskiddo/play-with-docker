@@ -11,8 +11,8 @@ import (
 
 func TestPlayground_Extras_GetInt(t *testing.T) {
 	p := Playground{
-		Id:     uuid.NewV4().String(),
-		Domain: "localhost",
+		Id:                       uuid.NewV4().String(),
+		Domain:                   "localhost",
 		DefaultDinDInstanceImage: "franel/dind",
 		AllowWindowsInstances:    false,
 		DefaultSessionDuration:   time.Hour * 4,
@@ -44,8 +44,8 @@ func TestPlayground_Extras_GetInt(t *testing.T) {
 
 func TestPlayground_Extras_GetString(t *testing.T) {
 	p := Playground{
-		Id:     uuid.NewV4().String(),
-		Domain: "localhost",
+		Id:                       uuid.NewV4().String(),
+		Domain:                   "localhost",
 		DefaultDinDInstanceImage: "franel/dind",
 		AllowWindowsInstances:    false,
 		DefaultSessionDuration:   time.Hour * 4,
@@ -82,8 +82,8 @@ func TestPlayground_Extras_GetString(t *testing.T) {
 
 func TestPlayground_Extras_GetDuration(t *testing.T) {
 	p := Playground{
-		Id:     uuid.NewV4().String(),
-		Domain: "localhost",
+		Id:                       uuid.NewV4().String(),
+		Domain:                   "localhost",
 		DefaultDinDInstanceImage: "franel/dind",
 		AllowWindowsInstances:    false,
 		DefaultSessionDuration:   time.Hour * 4,

@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	dockerTypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/swarm"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/stretchr/testify/assert"
 )
 

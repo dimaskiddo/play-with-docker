@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/dimaskiddo/play-with-docker/storage"
+	"github.com/gorilla/mux"
 )
 
 type PublicUserInfo struct {

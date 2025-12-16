@@ -10,14 +10,14 @@ import (
 	"net/url"
 	"time"
 
-	dockerTypes "github.com/docker/docker/api/types"
-	units "github.com/docker/go-units"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/dimaskiddo/play-with-docker/storage"
+	dockerTypes "github.com/docker/docker/api/types"
+	units "github.com/docker/go-units"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 type InstanceStats struct {

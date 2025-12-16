@@ -15,6 +15,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/inconshreveable/go-vhost v1.0.0
+	github.com/joho/godotenv v1.5.1
 	github.com/miekg/dns v1.1.69
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/xid v1.6.0

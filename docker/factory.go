@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/dimaskiddo/play-with-docker/pwd/types"
-	"github.com/dimaskiddo/play-with-docker/router"
 )
 
 type FactoryApi interface {

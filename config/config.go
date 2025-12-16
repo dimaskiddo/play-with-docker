@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"os"
 	"regexp"
 
 	"github.com/gorilla/securecookie"
@@ -11,13 +10,13 @@ import (
 )
 
 const (
-	PWDHostnameRegex      = "[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}"
-	PortRegex             = "[0-9]{1,5}"
-	AliasnameRegex        = "[0-9|a-z|A-Z|-]*"
+	PWDPortRegex          = "[0-9]{1,5}"
+	PWDDomainRegex        = "[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}"
+	AliasNameRegex        = "[0-9|a-z|A-Z|-]*"
 	AliasSessionRegex     = "[0-9|a-z|A-Z]{8}"
-	AliasGroupRegex       = "(" + AliasnameRegex + ")-(" + AliasSessionRegex + ")"
-	PWDHostPortGroupRegex = "^.*ip(" + PWDHostnameRegex + ")(?:-?(" + PortRegex + "))?(?:\\..*)?$"
-	AliasPortGroupRegex   = "^.*pwd" + AliasGroupRegex + "(?:-?(" + PortRegex + "))?\\..*$"
+	AliasGroupRegex       = "(" + AliasNameRegex + ")-(" + AliasSessionRegex + ")"
+	PWDHostPortGroupRegex = "^.*ip(" + PWDDomainRegex + ")(?:-?(" + PWDPortRegex + "))?(?:\\..*)?$"
+	AliasPortGroupRegex   = "^.*pwd" + AliasGroupRegex + "(?:-?(" + PWDPortRegex + "))?\\..*$"
 )
 
 var (
@@ -41,35 +40,37 @@ var (
 var Providers = map[string]map[string]*oauth2.Config{}
 
 func ParseFlags() {
-	flag.StringVar(&PortNumber, "port", "3000", "Port number")
-	flag.StringVar(&PlaygroundDomain, "domain", "localhost", "Domain to use for the playground")
-	flag.BoolVar(&ForceTLS, "tls", false, "Use TLS to connect to docker daemons")
+	flag.StringVar(&PortNumber, "port", GetEnvString("PWD_PORT", "3000"), "Play With Docker Port")
+	flag.StringVar(&PlaygroundDomain, "domain", GetEnvString("PWD_DOMAIN", "localhost"), "Play With Docker Domain")
 
-	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", false, "Enabled let's encrypt tls certificates")
-	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", "./certs", "Path where let's encrypt certs will be stored")
+	flag.StringVar(&PWDContainerName, "name", GetEnvString("PWD_CONTAINER_NAME", "play-with-docker"), "Play With Docker Container Name")
+	flag.StringVar(&L2ContainerName, "l2-name", GetEnvString("PWD_L2_CONTAINER_NAME", "play-with-docker-router"), "L2 Router Container Name")
+	flag.StringVar(&L2RouterIP, "l2-ip", GetEnvString("PWD_L2_ROUTER_IP", ""), "L2 Router IP address for Ping Response")
+	flag.StringVar(&L2Subdomain, "l2-subdomain", GetEnvString("PWD_L2_SUBDOMAIN", "apps"), "L2 Router Subdomain for Ingress")
 
-	flag.StringVar(&SessionsFile, "save", "./sessions/session", "Tell where to store sessions file")
+	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
+	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
 
-	flag.StringVar(&PWDContainerName, "name", "play-with-docker", "Container name used to run PWD (used to be able to connect it to the networks it creates)")
-	flag.StringVar(&L2ContainerName, "l2-name", "play-with-docker-router", "Container name used to run L2 Router")
-	flag.StringVar(&L2RouterIP, "l2-ip", "", "Host IP address for L2 router ping response")
-	flag.StringVar(&L2Subdomain, "l2-subdomain", "apps", "Subdomain to the L2 Router")
+	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
 
-	flag.BoolVar(&NoWindows, "win-disable", false, "Disable windows instances")
-	flag.BoolVar(&ExternalDindVolume, "dind-external-volume", false, "Use external dind volume though XFS volume driver")
+	flag.StringVar(&HashKey, "cookies-secret", GetEnvString("PWD_COOKIES_SECRET", "play-with-docker-cookies"), "Cookies Secret")
+	flag.StringVar(&CookieHashKey, "cookies-key-hash", GetEnvString("PWD_COOKIES_KEY_HASH", ""), "Cookies Validation Hash Key")
+	flag.StringVar(&CookieBlockKey, "cookies-key-encrypt", GetEnvString("PWD_COOKIES_KEY_ENCRYPT", ""), "Cookies Encryption Key")
 
-	flag.StringVar(&SessionDuration, "session-duration", "4h", "Maximum duration per-user session")
-	flag.Float64Var(&MaxLoadAvg, "maxload-avg", 100, "Maximum allowed load average before failing ping requests")
+	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetEnvString("PWD_SSH_KEY_FILE", "/etc/ssh/ssh_host_rsa_key"), "SSH Private Key to Use")
 
-	flag.StringVar(&HashKey, "hash-key", "ThisIsHasKey", "Hash Key to use for cookies")
-	flag.StringVar(&CookieHashKey, "cookie-hash-key", "", "Hash Key to use to validate cookies")
-	flag.StringVar(&CookieBlockKey, "cookie-block-key", "", "Block Key to use to encrypt cookies")
-	flag.StringVar(&SSHKeyPath, "ssh-key-path", "", "SSH Private Key to use")
+	flag.BoolVar(&UseLetsEncrypt, "enable-letsencrypt", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
+	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs"), "Path Where Let's Encrypt Certificates Will be Stored")
 
-	flag.StringVar(&AdminToken, "admin-token", "", "Token to validate admin user for admin endpoints")
-	flag.StringVar(&SegmentId, "segment-id", "", "Segment ID to post metrics")
+	flag.BoolVar(&NoWindows, "disable-windows", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
 
-	flag.BoolVar(&Unsafe, "unsafe", os.Getenv("PWD_UNSAFE") == "true", "Operate in unsafe mode")
+	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
+	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DINS External Volume Through XFS Volume Driver")
+
+	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
+	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
+
+	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
