@@ -1,27 +1,38 @@
-FROM golang:1.9
+# Builder Image
+# ---------------------------------------------------
+FROM golang:1.25-alpine AS go-builder
 
-# Copy the runtime dockerfile into the context as Dockerfile
-COPY . /go/src/github.com/play-with-docker/play-with-docker
+WORKDIR /usr/src/app
 
-WORKDIR /go/src/github.com/play-with-docker/play-with-docker
+COPY . ./
+
+RUN apk --no-cache --update upgrade \
+    && apk --no-cache --update add \
+        openssh-keygen \
+        openssh-client \
+    && ssh-keygen -N "" -t rsa -b 4096 \
+      -f /etc/ssh/ssh_host_rsa_key \
+      -C docker@dimaskiddo.my.id > /dev/null \
+    && cd router/l2 \
+    && CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -a -installsuffix nocgo -o play-with-docker-l2 .
 
 
-RUN ssh-keygen -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key >/dev/null
+# Final Image
+# ---------------------------------------------------
+FROM dimaskiddo/alpine:base-glibc
+MAINTAINER Dimas Restu Hidayanto <dimas.restu@student.upi.edu>
 
-WORKDIR /go/src/github.com/play-with-docker/play-with-docker/router/l2
+WORKDIR /usr/app/play-with-docker
 
-RUN CGO_ENABLED=0 go build -a -installsuffix nocgo -o /go/bin/play-with-docker-l2 .
+RUN apk --no-cache --update upgrade \
+    && apk --no-cache --update add \
+        ca-certificates \
+        openssh-client \
+    && mkdir -p /usr/app/play-with-docker/pwd
 
-
-FROM alpine
-
-RUN apk --update add ca-certificates
-RUN mkdir /app
-
-COPY --from=0 /go/bin/play-with-docker-l2 /app/play-with-docker-l2
-COPY --from=0 /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
-
-WORKDIR /app
-CMD ["./play-with-docker-l2", "-ssh_key_path", "/etc/ssh/ssh_host_rsa_key"]
+COPY --from=go-builder /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
+COPY --from=go-builder /usr/src/app/router/l2/play-with-docker-l2 /usr/bin/play-with-docker-l2
 
 EXPOSE 22 53 443 8080
+
+CMD ["play-with-docker-l2", "-ssh_key_path", "/etc/ssh/ssh_host_rsa_key"]
