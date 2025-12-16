@@ -9,6 +9,9 @@ networks:
 
 services:
   play-with-docker:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: dimaskiddo/play-with-docker:latest
     container_name: 'play-with-docker'
     healthcheck:
@@ -30,6 +33,9 @@ services:
       - sessions:/usr/app/play-with-docker/pwd
 
   play-with-docker-router:
+    build:
+      context: .
+      dockerfile: Dockerfile.l2
     image: dimaskiddo/play-with-docker:l2
     container_name: 'play-with-docker-router'
     healthcheck:
