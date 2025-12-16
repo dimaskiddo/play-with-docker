@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/play-with-docker/play-with-docker/event"
-	"github.com/play-with-docker/play-with-docker/k8s"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/event"
+	"github.com/dimaskiddo/play-with-docker/k8s"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,7 +49,7 @@ func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Insta
 		return err
 	}
 
-	list, err := k8s.CoreV1().Services("").List(meta_v1.ListOptions{})
+	list, err := k8s.CoreV1().Services("").List(ctx, meta_v1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Insta
 		}
 	}
 
-	nodeList, err := k8s.CoreV1().Nodes().List(meta_v1.ListOptions{})
+	nodeList, err := k8s.CoreV1().Nodes().List(ctx, meta_v1.ListOptions{})
 	if err != nil {
 		return err
 	}

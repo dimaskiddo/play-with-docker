@@ -17,8 +17,8 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/gorilla/mux"
-	"github.com/play-with-docker/play-with-docker/config"
-	"github.com/play-with-docker/play-with-docker/router"
+	"github.com/dimaskiddo/play-with-docker/config"
+	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/shirou/gopsutil/load"
 	"github.com/urfave/negroni"
 )

@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/router"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
-	"github.com/play-with-docker/play-with-docker/router"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
@@ -49,7 +49,7 @@ func NewClient(instance *types.Instance, proxyHost string) (*kubernetes.Clientse
 	cc := rest.ContentConfig{
 		ContentType:          "application/json",
 		GroupVersion:         &schema.GroupVersion{Version: "v1"},
-		NegotiatedSerializer: serializer.DirectCodecFactory{CodecFactory: scheme.Codecs},
+		NegotiatedSerializer: serializer.WithoutConversionCodecFactory{CodecFactory: scheme.Codecs},
 	}
 	restConfig := &rest.Config{
 		Host:          durl,

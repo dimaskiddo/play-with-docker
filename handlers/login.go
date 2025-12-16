@@ -10,10 +10,10 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/dimaskiddo/play-with-docker/config"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
-	"github.com/play-with-docker/play-with-docker/config"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
@@ -144,7 +144,7 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		user.ProviderUserId = strconv.Itoa(u.GetID())
+		user.ProviderUserId = strconv.Itoa(int(u.GetID()))
 		user.Name = u.GetName()
 		user.Avatar = u.GetAvatarURL()
 		user.Email = u.GetEmail()

@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	dockerTypes "github.com/docker/docker/api/types"
-	"github.com/play-with-docker/play-with-docker/docker"
-	"github.com/play-with-docker/play-with-docker/event"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
-	"github.com/play-with-docker/play-with-docker/storage"
+	"github.com/dimaskiddo/play-with-docker/docker"
+	"github.com/dimaskiddo/play-with-docker/event"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

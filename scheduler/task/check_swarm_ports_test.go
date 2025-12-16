@@ -6,9 +6,9 @@ import (
 
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/play-with-docker/play-with-docker/docker"
-	"github.com/play-with-docker/play-with-docker/event"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/docker"
+	"github.com/dimaskiddo/play-with-docker/event"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
-	"github.com/play-with-docker/play-with-docker/pwd/types"
-	"github.com/play-with-docker/play-with-docker/storage"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/storage"
 )
 
 type localCachedFactory struct {

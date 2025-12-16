@@ -18,10 +18,12 @@ services:
       disable: true
     command:
       - play-with-docker
-      - -save
-      - /usr/app/play-with-docker/pwd/session
       - -name
-      - l2
+      - play-with-docker
+      - -l2
+      - play-with-docker-router
+      - -save
+      - /usr/app/play-with-docker/sessions/session
     networks:
       - play-with-docker
     ports:
@@ -30,7 +32,7 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - sessions:/usr/app/play-with-docker/pwd
+      - sessions:/usr/app/play-with-docker/sessions
 
   play-with-docker-router:
     build:
@@ -42,12 +44,14 @@ services:
       disable: true
     command:
       - play-with-docker-l2
-      - -ssh_key_path
-      - /etc/ssh/ssh_host_rsa_key
       - -name
-      - l2
+      - play-with-docker
+      - -l2
+      - play-with-docker-router
       - -save
-      - /usr/app/play-with-docker/pwd/networks
+      - /usr/app/play-with-docker/sessions/networks
+      - -ssh-key-path
+      - /etc/ssh/ssh_host_rsa_key
     networks:
       - play-with-docker
     ports:
@@ -58,4 +62,4 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - sessions:/usr/app/play-with-docker/pwd
+      - sessions:/usr/app/play-with-docker/sessions

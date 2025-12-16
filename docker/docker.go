@@ -21,7 +21,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/play-with-docker/play-with-docker/config"
+	"github.com/dimaskiddo/play-with-docker/config"
 )
 
 const (

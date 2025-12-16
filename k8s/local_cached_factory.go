@@ -1,13 +1,14 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
-	"github.com/play-with-docker/play-with-docker/pwd/types"
-	"github.com/play-with-docker/play-with-docker/storage"
+	"github.com/dimaskiddo/play-with-docker/pwd/types"
+	"github.com/dimaskiddo/play-with-docker/storage"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -50,7 +51,7 @@ func (f *localCachedFactory) GetForInstance(instance *types.Instance) (*kubernet
 	}
 
 	err := f.check(func() error {
-		_, err := c.client.CoreV1().Pods("").List(metav1.ListOptions{})
+		_, err := c.client.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
 		return err
 	})
 	if err != nil {
