@@ -1,6 +1,7 @@
 version: '3'
 
 volumes:
+  certs:
   sessions:
 
 networks:
@@ -24,6 +25,7 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - certs:/usr/app/play-with-docker/certs
       - sessions:/usr/app/play-with-docker/sessions
 
   play-with-docker-router:
@@ -44,4 +46,5 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - certs:/usr/app/play-with-docker/certs
       - sessions:/usr/app/play-with-docker/sessions
