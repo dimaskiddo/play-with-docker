@@ -8,13 +8,13 @@ Under the hood DIND or Docker-in-Docker is used to give the effect of multiple V
 ### Requirements
 
 * [Docker](https://docs.docker.com/install/)
-* [Go](https://golang.org/dl/) (stable release)
+* [Go](https://golang.org/dl/)
 
 ### Deployment
 
 ```bash
 # Clone this repo locally
-git clone https://github.com/dimaskiddo/play-with-docker
+git clone https://github.com/dimaskiddo/play-with-docker.git
 cd play-with-docker
 
 # Verify the Docker daemon is running
@@ -34,16 +34,16 @@ docker pull franela/dind
 docker compose up -d
 ```
 
-Now navigate to [http://localhost](http://localhost) and click the green "Start" button
+Now navigate to [http://localhost:3000](http://localhost:3000) and click the green "Start" button
 to create a new session, followed by "ADD NEW INSTANCE" to launch a new terminal instance.
 
 Notes:
 
 * There is a hard-coded limit of 5 Docker playgrounds per session. After 4 hours sessions are deleted.
 * If you want to override the DIND version or image then set the environmental variable i.e.
-  `DIND_IMAGE=franela/docker<version>-rc:dind`. Take into account that you can't use standard `dind` images, only [franela](https://hub.docker.com/r/franela/) ones work.
+  `DIND_IMAGE=franela/dind:latest`. Take into account that you can't use standard `dind` images, only [franela](https://hub.docker.com/r/franela/) ones work.
 
-### Port forwarding
+### Port Forwarding
 
 In order for port forwarding to work correctly in development you need to make `*.localhost` to resolve to `127.0.0.1`. That way when you try to access `pwd10-0-0-1-8080.host1.localhost`, then you're forwarded correctly to your local PWD server.
 
@@ -55,15 +55,17 @@ address=/localhost/127.0.0.1
 
 Don't forget to change your computer's default DNS to use the dnsmasq server to resolve.
 
+
 ## FAQ
 
-### How can I connect to a published port from the outside world?
+### How Can I Connect to a Published Port from The Outside World?
 
 If you need to access your services from outside, use the following URL pattern `http://ip<hyphen-ip>-<session_jd>-<port>.<l2-subdomain>.<domain>` (i.e: http://ip10-10-10-10-b8ir6vbg5vr00095iil0-8080.apps.docker.dimaskiddo.my.id).
 
-### Why is PWD running in ports 80 and 443? Can I change that?
+### Why is Play With Docker Running in Ports 80 and 443? Can I Change That?
 
 No, it needs to run on those ports for DNS resolve to work. Ideas or suggestions about how to improve this are welcome
+
 
 ## Hints
 

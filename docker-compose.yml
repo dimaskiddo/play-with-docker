@@ -17,10 +17,12 @@ services:
     container_name: 'play-with-docker'
     healthcheck:
       disable: true
+    security_opt:
+      - apparmor:unconfined
     networks:
       - play-with-docker
     ports:
-      - "80:3000"
+      - "3000:3000"
     env_file:
       - .env
     volumes:
@@ -36,6 +38,8 @@ services:
     container_name: 'play-with-docker-router'
     healthcheck:
       disable: true
+    security_opt:
+      - apparmor:unconfined
     networks:
       - play-with-docker
     ports:
