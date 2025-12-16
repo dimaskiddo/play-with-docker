@@ -20,7 +20,7 @@ services:
       - play-with-docker
       - -name
       - play-with-docker
-      - -l2
+      - -l2-name
       - play-with-docker-router
       - -save
       - /usr/app/play-with-docker/sessions/session
@@ -46,7 +46,7 @@ services:
       - play-with-docker-l2
       - -name
       - play-with-docker
-      - -l2
+      - -l2-name
       - play-with-docker-router
       - -save
       - /usr/app/play-with-docker/sessions/networks

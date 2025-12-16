@@ -25,26 +25,19 @@ var (
 	AliasFilter = regexp.MustCompile(AliasPortGroupRegex)
 )
 
-var (
-	PortNumber, SessionsFile, PWDContainerName, L2ContainerName, L2Subdomain, HashKey, SSHKeyPath, L2RouterIP, CookieHashKey, CookieBlockKey string
-	UseLetsEncrypt, ExternalDindVolume, NoWindows                                                                                            bool
-	LetsEncryptCertsDir                                                                                                                      string
-	MaxLoadAvg                                                                                                                               float64
-	ForceTLS                                                                                                                                 bool
-	SecureCookie                                                                                                                             *securecookie.SecureCookie
-	AdminToken                                                                                                                               string
-)
-
 // Unsafe enables a number of unsafe features when set. It is principally
 // intended to be used in development. For example, it allows the caller to
 // specify the Docker networks to join.
-var Unsafe bool
+var (
+	PortNumber, PlaygroundDomain, SessionsFile, PWDContainerName, L2ContainerName, L2Subdomain, SessionDuration, HashKey, SSHKeyPath, L2RouterIP, CookieHashKey, CookieBlockKey, SegmentId string
+	UseLetsEncrypt, ExternalDindVolume, NoWindows                                                                                                                                          bool
+	LetsEncryptCertsDir                                                                                                                                                                    string
+	MaxLoadAvg                                                                                                                                                                             float64
+	ForceTLS, Unsafe                                                                                                                                                                       bool
+	SecureCookie                                                                                                                                                                           *securecookie.SecureCookie
+	AdminToken                                                                                                                                                                             string
+)
 
-var PlaygroundDomain string
-
-var SegmentId string
-
-// TODO move this to a sync map so it can be updated on demand when the configuration for a playground changes
 var Providers = map[string]map[string]*oauth2.Config{}
 
 func ParseFlags() {
@@ -53,20 +46,20 @@ func ParseFlags() {
 	flag.BoolVar(&ForceTLS, "tls", false, "Use TLS to connect to docker daemons")
 
 	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", false, "Enabled let's encrypt tls certificates")
-	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-dir", "./certs", "Path where let's encrypt certs will be stored")
+	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", "./certs", "Path where let's encrypt certs will be stored")
 
 	flag.StringVar(&SessionsFile, "save", "./sessions/session", "Tell where to store sessions file")
 
 	flag.StringVar(&PWDContainerName, "name", "play-with-docker", "Container name used to run PWD (used to be able to connect it to the networks it creates)")
-	flag.StringVar(&L2ContainerName, "l2", "play-with-docker-router", "Container name used to run L2 Router")
-
+	flag.StringVar(&L2ContainerName, "l2-name", "play-with-docker-router", "Container name used to run L2 Router")
 	flag.StringVar(&L2RouterIP, "l2-ip", "", "Host IP address for L2 router ping response")
 	flag.StringVar(&L2Subdomain, "l2-subdomain", "apps", "Subdomain to the L2 Router")
 
 	flag.BoolVar(&NoWindows, "win-disable", false, "Disable windows instances")
 	flag.BoolVar(&ExternalDindVolume, "dind-external-volume", false, "Use external dind volume though XFS volume driver")
 
-	flag.Float64Var(&MaxLoadAvg, "maxload", 100, "Maximum allowed load average before failing ping requests")
+	flag.StringVar(&SessionDuration, "session-duration", "4h", "Maximum duration per-user session")
+	flag.Float64Var(&MaxLoadAvg, "maxload-avg", 100, "Maximum allowed load average before failing ping requests")
 
 	flag.StringVar(&HashKey, "hash-key", "ThisIsHasKey", "Hash Key to use for cookies")
 	flag.StringVar(&CookieHashKey, "cookie-hash-key", "", "Hash Key to use to validate cookies")
@@ -75,8 +68,8 @@ func ParseFlags() {
 
 	flag.StringVar(&AdminToken, "admin-token", "", "Token to validate admin user for admin endpoints")
 	flag.StringVar(&SegmentId, "segment-id", "", "Segment ID to post metrics")
-	flag.BoolVar(&Unsafe, "unsafe", os.Getenv("PWD_UNSAFE") == "true", "Operate in unsafe mode")
 
+	flag.BoolVar(&Unsafe, "unsafe", os.Getenv("PWD_UNSAFE") == "true", "Operate in unsafe mode")
 	flag.Parse()
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
