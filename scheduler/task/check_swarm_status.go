@@ -37,9 +37,11 @@ func (t *checkSwarmStatus) Run(ctx context.Context, instance *types.Instance) er
 		log.Println(err)
 		return err
 	}
+
 	status.Instance = instance.Name
 
 	t.event.Emit(CheckSwarmStatusEvent, instance.SessionId, status)
+
 	return nil
 }
 

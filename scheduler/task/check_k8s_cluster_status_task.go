@@ -42,7 +42,6 @@ func (c checkK8sClusterStatusTask) Run(ctx context.Context, i *types.Instance) e
 		c.event.Emit(CheckSwarmStatusEvent, i.SessionId, status)
 		return err
 	} else if !isManager {
-		// Not a manager node, nothing to do for this task
 		status.IsWorker = true
 	} else {
 		status.IsManager = true

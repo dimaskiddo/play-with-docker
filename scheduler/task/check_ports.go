@@ -41,12 +41,14 @@ func (t *checkPorts) Run(ctx context.Context, instance *types.Instance) error {
 		log.Println(err)
 		return err
 	}
+
 	ports := make([]int, len(ps))
 	for i, port := range ps {
 		ports[i] = int(port)
 	}
 
 	t.event.Emit(CheckPortsEvent, instance.SessionId, DockerPorts{Instance: instance.Name, Ports: ports})
+
 	return nil
 }
 

@@ -30,7 +30,6 @@ func NewCheckK8sClusterExposedPorts(e event.EventApi, f k8s.FactoryApi) *checkK8
 }
 
 func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Instance) error {
-
 	kc, err := c.factory.GetKubeletForInstance(i)
 	if err != nil {
 		return err
@@ -53,6 +52,7 @@ func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Insta
 	if err != nil {
 		return err
 	}
+
 	exposedPorts := []int{}
 
 	for _, svc := range list.Items {
@@ -67,11 +67,13 @@ func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Insta
 	if err != nil {
 		return err
 	}
+
 	instances := []string{}
 	for _, node := range nodeList.Items {
 		instances = append(instances, node.Name)
 	}
 
 	c.event.Emit(CheckSwarmPortsEvent, i.SessionId, ClusterPorts{Manager: i.Name, Instances: instances, Ports: exposedPorts})
+
 	return nil
 }
