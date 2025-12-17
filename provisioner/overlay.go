@@ -24,7 +24,6 @@ func NewOverlaySessionProvisioner(df docker.FactoryApi) SessionProvisionerApi {
 func (p *overlaySessionProvisioner) SessionNew(ctx context.Context, s *types.Session) error {
 	dockerClient, err := p.dockerFactory.GetForSession(s)
 	if err != nil {
-		// We assume we are out of capacity
 		return fmt.Errorf("Out of capacity")
 	}
 
@@ -44,7 +43,8 @@ func (p *overlaySessionProvisioner) SessionNew(ctx context.Context, s *types.Ses
 
 	log.Printf("Network [%s] created for session [%s]\n", s.Id, s.Id)
 
-	ip, err := dockerClient.NetworkConnect(config.L2ContainerName, s.Id, s.PwdIpAddress)
+	aliases := []string{config.PWDContainerName}
+	ip, err := dockerClient.NetworkConnect(config.L2ContainerName, s.Id, s.PwdIpAddress, aliases)
 	if err != nil {
 		log.Println(err)
 		return err

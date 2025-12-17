@@ -34,12 +34,14 @@ func NewDinD(generator id.Generator, f docker.FactoryApi, s storage.StorageApi) 
 
 func checkHostnameExists(sessionId, hostname string, instances []*types.Instance) bool {
 	exists := false
+
 	for _, instance := range instances {
 		if instance.Hostname == hostname {
 			exists = true
 			break
 		}
 	}
+
 	return exists
 }
 
@@ -51,13 +53,17 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		}
 		conf.ImageName = playground.DefaultDinDInstanceImage
 	}
+
 	log.Printf("NewInstance - using image: [%s]\n", conf.ImageName)
+
 	if conf.Hostname == "" {
 		instances, err := d.storage.InstanceFindBySessionId(session.Id)
 		if err != nil {
 			return nil, err
 		}
+
 		var nodeName string
+
 		for i := 1; ; i++ {
 			nodeName = fmt.Sprintf("node%d", i)
 			exists := checkHostnameExists(session.Id, nodeName, instances)
@@ -65,6 +71,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 				break
 			}
 		}
+
 		conf.Hostname = nodeName
 	}
 
@@ -99,6 +106,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		HostFQDN:       conf.PlaygroundFQDN,
 		Privileged:     conf.Privileged,
 		Networks:       networks,
+		NetAliases:     []string{conf.Hostname},
 		DindVolumeSize: conf.DindVolumeSize,
 		Envs:           conf.Envs,
 		UserVolume:     userVolumePath,
@@ -140,6 +148,7 @@ func (d *DinD) getSession(sessionId string) (*types.Session, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		session = s
 		d.cache.Add(sessionId, s)
 	} else {
@@ -377,5 +386,6 @@ func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
 	}
 
 	log.Printf("Host bind mount path for user %s: %s\n", session.UserId, hostUserDataPath)
+
 	return hostUserDataPath, nil
 }
