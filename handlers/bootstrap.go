@@ -7,8 +7,9 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
-	"io/ioutil"
+
 	"log"
 	"net/http"
 	"path"
@@ -29,6 +30,7 @@ import (
 	"github.com/urfave/negroni"
 	oauth2Github "golang.org/x/oauth2/github"
 	oauth2Google "golang.org/x/oauth2/google"
+	oauth2Microsoft "golang.org/x/oauth2/microsoft"
 	"google.golang.org/api/people/v1"
 )
 
@@ -76,9 +78,9 @@ func Register(extend HandlerExtender) {
 			return true
 		}))
 
-	// Specific routes
 	r.HandleFunc("/ping", Ping).Methods("GET")
 	corsRouter.HandleFunc("/instances/images", GetInstanceImages).Methods("GET")
+	corsRouter.HandleFunc("/sessions/terminate", TerminateSession).Methods("POST")
 	corsRouter.HandleFunc("/sessions/{sessionId}", GetSession).Methods("GET")
 	corsRouter.HandleFunc("/sessions/{sessionId}/close", CloseSession).Methods("POST")
 	corsRouter.HandleFunc("/sessions/{sessionId}", CloseSession).Methods("DELETE")
@@ -111,7 +113,6 @@ func Register(extend HandlerExtender) {
 	corsRouter.HandleFunc("/sessions/{sessionId}/ws/", WSH)
 	r.Handle("/metrics", promhttp.Handler())
 
-	// Generic routes
 	r.HandleFunc("/", Landing).Methods("GET")
 
 	corsRouter.HandleFunc("/users/me", LoggedInUser).Methods("GET")
@@ -144,15 +145,17 @@ func Register(extend HandlerExtender) {
 	if config.UseLetsEncrypt {
 		domainCache, err := lru.New(5000)
 		if err != nil {
-			log.Fatalf("Could not start domain cache. Got: %v", err)
+			log.Fatalf("Could not Start Domain Cache. Got: %v", err)
 		}
+
 		certManager := autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			HostPolicy: func(ctx context.Context, host string) error {
 				if _, found := domainCache.Get(host); !found {
 					if playground := core.PlaygroundFindByDomain(host); playground == nil {
-						return fmt.Errorf("Playground for domain %s was not found", host)
+						return fmt.Errorf("Playground for Domain %s was Not Found", host)
 					}
+
 					domainCache.Add(host, true)
 				}
 				return nil
@@ -166,31 +169,35 @@ func Register(extend HandlerExtender) {
 
 		go func() {
 			rr := mux.NewRouter()
-			rr.HandleFunc("/ping", Ping).Methods("GET")
+
 			rr.Handle("/metrics", promhttp.Handler())
+			rr.HandleFunc("/ping", Ping).Methods("GET")
 			rr.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 				target := fmt.Sprintf("https://%s%s", r.Host, r.URL.Path)
 				if len(r.URL.RawQuery) > 0 {
 					target += "?" + r.URL.RawQuery
 				}
+
 				http.Redirect(rw, r, target, http.StatusMovedPermanently)
 			})
+
 			nr := negroni.Classic()
 			nr.UseHandler(rr)
-			log.Println("Starting redirect server")
+
 			redirectServer := http.Server{
 				Addr:              "0.0.0.0:3001",
 				Handler:           certManager.HTTPHandler(nr),
 				IdleTimeout:       30 * time.Second,
 				ReadHeaderTimeout: 5 * time.Second,
 			}
+
 			log.Fatal(redirectServer.ListenAndServe())
 		}()
 
-		log.Println("Listening on port " + config.PortNumber)
+		log.Println("Listening on Port " + config.PortNumber)
 		log.Fatal(httpServer.ListenAndServeTLS("", ""))
 	} else {
-		log.Println("Listening on port " + config.PortNumber)
+		log.Println("Listening on Port " + config.PortNumber)
 		log.Fatal(httpServer.ListenAndServe())
 	}
 }
@@ -201,13 +208,14 @@ func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
 	http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(a))
 }
 
 func initPlaygrounds() {
 	pgs, err := core.PlaygroundList()
 	if err != nil {
-		log.Fatal("Error getting playgrounds for initialization")
+		log.Fatal("Error Getting Playgrounds for Initialization")
 	}
 
 	for _, p := range pgs {
@@ -224,28 +232,48 @@ func initAssets(p *types.Playground) {
 	lpath := path.Join(p.AssetsDir, "landing.html")
 	landing, err := fs.ReadFile(staticFiles, lpath)
 	if err != nil {
-		log.Printf("Could not load %v: %v", lpath, err)
+		log.Printf("Could not Load %v: %v", lpath, err)
 		return
 	}
 
 	var b bytes.Buffer
+
 	t := template.New("landing.html").Delims("[[", "]]")
 	t, err = t.Parse(string(landing))
 	if err != nil {
 		log.Fatalf("Error parsing template %v", err)
 	}
+
 	if err := t.Execute(&b, struct{ SegmentId string }{config.SegmentId}); err != nil {
 		log.Fatalf("Error executing template %v", err)
 	}
-	landingBytes, err := ioutil.ReadAll(&b)
+
+	landingBytes, err := io.ReadAll(&b)
 	if err != nil {
 		log.Fatalf("Error reading template bytes %v", err)
 	}
+
 	landings[p.Id] = landingBytes
 }
 
 func initOauthProviders(p *types.Playground) {
 	config.Providers[p.Id] = map[string]*oauth2.Config{}
+
+	if p.DockerClientID != "" && p.DockerClientSecret != "" {
+		dockerEndpoint := getDockerEndpoint(p)
+
+		conf := &oauth2.Config{
+			ClientID:     p.DockerClientID,
+			ClientSecret: p.DockerClientSecret,
+			Scopes:       []string{"openid", "full_access:account"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  fmt.Sprintf("https://%s/authorize", dockerEndpoint),
+				TokenURL: fmt.Sprintf("https://%s/oauth/token", dockerEndpoint),
+			},
+		}
+
+		config.Providers[p.Id]["docker"] = conf
+	}
 
 	if p.GithubClientID != "" && p.GithubClientSecret != "" {
 		conf := &oauth2.Config{
@@ -257,6 +285,7 @@ func initOauthProviders(p *types.Playground) {
 
 		config.Providers[p.Id]["github"] = conf
 	}
+
 	if p.GoogleClientID != "" && p.GoogleClientSecret != "" {
 		conf := &oauth2.Config{
 			ClientID:     p.GoogleClientID,
@@ -267,19 +296,29 @@ func initOauthProviders(p *types.Playground) {
 
 		config.Providers[p.Id]["google"] = conf
 	}
-	if p.DockerClientID != "" && p.DockerClientSecret != "" {
 
-		endpoint := getDockerEndpoint(p)
+	if p.AzureClientID != "" && p.AzureClientSecret != "" {
 		conf := &oauth2.Config{
-			ClientID:     p.DockerClientID,
-			ClientSecret: p.DockerClientSecret,
-			Scopes:       []string{"openid", "full_access:account"},
+			ClientID:     p.AzureClientID,
+			ClientSecret: p.AzureClientSecret,
+			Scopes:       []string{"openid", "profile", "email"},
+			Endpoint:     oauth2Microsoft.AzureADEndpoint(p.AzureTenantID),
+		}
+
+		config.Providers[p.Id]["azure"] = conf
+	}
+
+	if p.OIDCClientID != "" && p.OIDCClientSecret != "" && p.OIDCEndpoint != "" {
+		conf := &oauth2.Config{
+			ClientID:     p.OIDCClientID,
+			ClientSecret: p.OIDCClientSecret,
+			Scopes:       []string{"openid", "profile", "email"},
 			Endpoint: oauth2.Endpoint{
-				AuthURL:  fmt.Sprintf("https://%s/authorize/", endpoint),
-				TokenURL: fmt.Sprintf("https://%s/oauth/token", endpoint),
+				AuthURL:  fmt.Sprintf("https://%s/login/oauth/authorize", p.OIDCEndpoint),
+				TokenURL: fmt.Sprintf("https://%s/login/oauth/access_token", p.OIDCEndpoint),
 			},
 		}
 
-		config.Providers[p.Id]["docker"] = conf
+		config.Providers[p.Id]["oidc"] = conf
 	}
 }

@@ -11,6 +11,7 @@ func (e PlaygroundExtras) Get(name string) (interface{}, bool) {
 	v, f := e[name]
 	return v, f
 }
+
 func (e PlaygroundExtras) GetInt(name string) (int, bool) {
 	v, f := e[name]
 	if f {
@@ -91,6 +92,9 @@ type Playground struct {
 	AzureClientID               string           `json:"azure_client_id" bson:"azure_client_id"`
 	AzureClientSecret           string           `json:"azure_client_secret" bson:"azure_client_secret"`
 	AzureTenantID               string           `json:"azure_tenant_id" bson:"azure_tenant_id"`
+	OIDCClientID                string           `json:"oidc_client_id" bson:"oidc_client_id"`
+	OIDCClientSecret            string           `json:"oidc_client_secret" bson:"oidc_client_secret"`
+	OIDCEndpoint                string           `json:"oidc_endpoint" bson:"oidc_endpoint"`
 	AuthRedirectBase            string           `json:"auth_redirect_base" bson:"auth_redirect_base"`
 	DockerHost                  string           `json:"docker_host" bson:"docker_host"`
 	MaxInstances                int              `json:"max_instances" bson:"max_instances"`

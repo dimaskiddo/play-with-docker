@@ -46,6 +46,7 @@ var (
 	GithubClientID, GithubClientSecret              string
 	GoogleClientID, GoogleClientSecret              string
 	AzureClientID, AzureClientSecret, AzureTenantID string
+	OIDCClientID, OIDCClientSecret, OIDCEndpoint    string
 )
 
 var Providers = map[string]map[string]*oauth2.Config{}
@@ -54,18 +55,22 @@ func ParseFlags() {
 	flag.StringVar(&PortNumber, "port", GetEnvString("PWD_PORT", "3000"), "Play With Docker Port")
 	flag.StringVar(&PlaygroundDomain, "domain", GetEnvString("PWD_DOMAIN", "localhost"), "Play With Docker Domain")
 
-	flag.StringVar(&DockerClientID, "sso-docker-client-id", GetEnvString("PWD_SSO_DOCKER_CLIENT_ID", ""), "Single-Sign-On Docker Client ID")
-	flag.StringVar(&DockerClientSecret, "sso-docker-client-secret", GetEnvString("PWD_SSO_DOCKER_CLIENT_SECRET", ""), "Single-Sign-On Docker Client Secret")
+	flag.StringVar(&DockerClientID, "oauth-docker-client-id", GetEnvString("PWD_OAUTH_DOCKER_CLIENT_ID", ""), "OAuth Docker Provider Client ID")
+	flag.StringVar(&DockerClientSecret, "oauth-docker-client-secret", GetEnvString("PWD_OAUTH_DOCKER_CLIENT_SECRET", ""), "OAuth Docker Provider Client Secret")
 
-	flag.StringVar(&GithubClientID, "sso-github-client-id", GetEnvString("PWD_SSO_GITHUB_CLIENT_ID", ""), "Single-Sign-On GitHub Client ID")
-	flag.StringVar(&GithubClientSecret, "sso-github-client-secret", GetEnvString("PWD_SSO_GITHUB_CLIENT_SECRET", ""), "Single-Sign-On GitHub Client Secret")
+	flag.StringVar(&GithubClientID, "oauth-github-client-id", GetEnvString("PWD_OAUTH_GITHUB_CLIENT_ID", ""), "OAuth GitHub Provider Client ID")
+	flag.StringVar(&GithubClientSecret, "oauth-github-client-secret", GetEnvString("PWD_OAUTH_GITHUB_CLIENT_SECRET", ""), "OAuth GitHub Provider Client Secret")
 
-	flag.StringVar(&GoogleClientID, "sso-google-client-id", GetEnvString("PWD_SSO_GOOGLE_CLIENT_ID", ""), "Single-Sign-On Google Client ID")
-	flag.StringVar(&GoogleClientSecret, "sso-google-client-secret", GetEnvString("PWD_SSO_GOOGLE_CLIENT_SECRET", ""), "Single-Sign-On Google Client Secret")
+	flag.StringVar(&GoogleClientID, "oauth-google-client-id", GetEnvString("PWD_OAUTH_GOOGLE_CLIENT_ID", ""), "OAuth Google Provider Client ID")
+	flag.StringVar(&GoogleClientSecret, "oauth-google-client-secret", GetEnvString("PWD_OAUTH_GOOGLE_CLIENT_SECRET", ""), "OAuth Google Provider Client Secret")
 
-	flag.StringVar(&AzureClientID, "sso-azure-client-id", GetEnvString("PWD_SSO_AZURE_CLIENT_ID", ""), "Single-Sign-On Microsoft Azure Client ID")
-	flag.StringVar(&AzureClientSecret, "sso-azure-client-secret", GetEnvString("PWD_SSO_AZURE_CLIENT_SECRET", ""), "Single-Sign-On Microsoft Azure Client Secret")
-	flag.StringVar(&AzureTenantID, "sso-azure-tenant-id", GetEnvString("PWD_SSO_AZURE_TENANT_ID", "common"), "Single-Sign-On Microsoft Azure Tenant ID")
+	flag.StringVar(&AzureClientID, "oauth-azure-client-id", GetEnvString("PWD_OAUTH_AZURE_CLIENT_ID", ""), "OAuth Azure Provider Client ID")
+	flag.StringVar(&AzureClientSecret, "oauth-azure-client-secret", GetEnvString("PWD_OAUTH_AZURE_CLIENT_SECRET", ""), "OAuth Azure Provider Client Secret")
+	flag.StringVar(&AzureTenantID, "oauth-azure-tenant-id", GetEnvString("PWD_OAUTH_AZURE_TENANT_ID", "common"), "OAuth Azure Provider Tenant ID")
+
+	flag.StringVar(&OIDCClientID, "oauth-oidc-client-id", GetEnvString("PWD_OAUTH_OIDC_CLIENT_ID", ""), "OAuth OIDC Provider Client ID")
+	flag.StringVar(&OIDCClientSecret, "oauth-oidc-client-secret", GetEnvString("PWD_OAUTH_OIDC_CLIENT_SECRET", ""), "OAuth OIDC Provider Client Secret")
+	flag.StringVar(&OIDCEndpoint, "oauth-oidc-endpoint", GetEnvString("PWD_OAUTH_OIDC_ENDPOINT", ""), "OAuth OIDC Provider Endpoint")
 
 	flag.StringVar(&PWDContainerName, "name", GetEnvString("PWD_CONTAINER_NAME", "play-with-docker"), "Play With Docker Container Name")
 	flag.StringVar(&L2ContainerName, "l2-name", GetEnvString("PWD_L2_CONTAINER_NAME", "play-with-docker-router"), "L2 Router Container Name")
@@ -89,10 +94,10 @@ func ParseFlags() {
 
 	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetEnvString("PWD_SSH_KEY_FILE", "/etc/ssh/ssh_host_rsa_key"), "SSH Private Key to Use")
 
-	flag.BoolVar(&UseLetsEncrypt, "enable-letsencrypt", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
+	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
 	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs"), "Path Where Let's Encrypt Certificates Will be Stored")
 
-	flag.BoolVar(&NoWindows, "disable-windows", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
+	flag.BoolVar(&NoWindows, "windows-disable", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
 
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DINS External Volume Through XFS Volume Driver")

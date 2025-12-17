@@ -27,4 +27,5 @@ func CloseSession(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ResetCookie(rw, req.Host)
 }

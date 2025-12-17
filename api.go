@@ -70,6 +70,9 @@ func main() {
 		AzureClientID:               config.AzureClientID,
 		AzureClientSecret:           config.AzureClientSecret,
 		AzureTenantID:               config.AzureTenantID,
+		OIDCClientID:                config.OIDCClientID,
+		OIDCClientSecret:            config.OIDCClientSecret,
+		OIDCEndpoint:                config.OIDCEndpoint,
 	}
 
 	if _, err := core.PlaygroundNew(playground); err != nil {
