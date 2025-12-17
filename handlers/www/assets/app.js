@@ -101,6 +101,24 @@
     $scope.closeSession = function () {
       window.onbeforeunload = null;
       $scope.socket.emit('session close');
+
+      $http({
+        method: 'POST',
+        url: '/sessions/terminate',
+        withCredentials: true
+      }).then(function(response) {
+        $scope.currentUser = null;
+
+        setTimeout(function() {
+          $window.location.href = '/';
+        }, 1000);
+      }, function(error) {
+        $scope.currentUser = null;
+
+        setTimeout(function() {
+          $window.location.href = '/';
+        }, 1000);
+      });
     }
 
     $scope.upsertInstance = function (info) {
@@ -161,6 +179,7 @@
       });
 
     }
+
     $scope.getSession = function (sessionId) {
       $http({
         method: 'GET',
@@ -190,6 +209,7 @@
         } else {
           base = 'wss://';
         }
+
         base += window.location.host;
         if (window.location.port) {
           base += ':' + window.location.port;
@@ -223,6 +243,7 @@
             }
           }
         });
+
         socket.addEventListener('close', function (event) {
           $scope.connected = false;
           for (var i in $rootScope.instances) {
@@ -232,6 +253,7 @@
             }
           }
         });
+
         socket.addEventListener('message', function (event) {
           var m = JSON.parse(event.data);
           var ls = socket.listeners[m.name];
@@ -242,7 +264,6 @@
             }
           }
         });
-
 
         socket.on('instance terminal status', function (name, status) {
           var instance = $scope.idx[name];
@@ -382,6 +403,26 @@
           document.write('session not found');
           return
         }
+      });
+    }
+
+    $scope.endSession = function() {
+      $http({
+        method: 'POST',
+        url: '/sessions/terminate',
+        withCredentials: true
+      }).then(function(response) {
+        $scope.currentUser = null;
+
+        setTimeout(function() {
+          $window.location.href = '/';
+        }, 1000);
+      }, function(error) {
+        $scope.currentUser = null;
+
+        setTimeout(function() {
+          $window.location.href = '/';
+        }, 1000);
       });
     }
 
