@@ -34,10 +34,12 @@ func GetSession(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	is := map[string]*types.Instance{}
 	for _, i := range instances {
 		is[i.Name] = i
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(SessionInfo{session, is})
 }

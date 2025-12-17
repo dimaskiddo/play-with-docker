@@ -16,6 +16,7 @@ func DeleteInstance(rw http.ResponseWriter, req *http.Request) {
 	if s != nil {
 		i := core.InstanceGet(s, instanceName)
 		err := core.InstanceDelete(s, i)
+
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return

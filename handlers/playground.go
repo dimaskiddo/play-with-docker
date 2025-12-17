@@ -33,6 +33,7 @@ func NewPlayground(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(newPlayground)
 }
 
@@ -49,6 +50,7 @@ func ListPlaygrounds(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(playgrounds)
 }
 
@@ -71,6 +73,8 @@ func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(PlaygroundConfigurationResponse{
 		Id:                          playground.Id,
 		Domain:                      playground.Domain,

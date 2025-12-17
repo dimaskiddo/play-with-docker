@@ -13,5 +13,7 @@ func GetInstanceImages(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(playground.AvailableDinDInstanceImages)
 }

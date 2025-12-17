@@ -62,16 +62,19 @@ func (s *socket) process() {
 			log.Printf("Error reading message from websocket. Got: %v\n", err)
 			break
 		}
+
 		if mt != websocket.TextMessage {
 			log.Printf("Received websocket message, but it is not a text message.\n")
 			continue
 		}
+
 		go func() {
 			var msg message
 			if err := json.Unmarshal(m, &msg); err != nil {
 				log.Printf("Cannot unmarshal message received from websocket. Got: %v\n", err)
 				return
 			}
+
 			s.onMessage(msg)
 		}()
 	}
@@ -85,6 +88,7 @@ func (s *socket) onMessage(msg message) {
 	if !found {
 		return
 	}
+
 	for _, cb := range cbs {
 		go cb(msg.Args...)
 	}
@@ -104,6 +108,7 @@ func (s *socket) Emit(ev string, args ...interface{}) {
 		log.Printf("Cannot marshal event to json. Got: %v\n", err)
 		return
 	}
+
 	if err := s.c.WriteMessage(websocket.TextMessage, b); err != nil {
 		log.Printf("Cannot write event to websocket connection. Got: %v\n", err)
 		s.Close()
@@ -114,10 +119,12 @@ func (s *socket) Emit(ev string, args ...interface{}) {
 func (s *socket) On(ev string, cb func(args ...interface{})) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
+
 	listeners, found := s.listeners[ev]
 	if !found {
 		listeners = []func(args ...interface{}){}
 	}
+
 	listeners = append(listeners, cb)
 	s.listeners[ev] = listeners
 }
@@ -131,6 +138,7 @@ func WSH(w http.ResponseWriter, r *http.Request) {
 	defer c.Close()
 
 	s := newSocket(r, c)
+
 	ws(s)
 	s.process()
 }
@@ -141,8 +149,8 @@ func ws(so *socket) {
 			fmt.Println("Recovered from ", r)
 		}
 	}()
-	vars := mux.Vars(so.Request())
 
+	vars := mux.Vars(so.Request())
 	sessionId := vars["sessionId"]
 
 	session, err := core.SessionGet(sessionId)
@@ -190,9 +198,9 @@ func ws(so *socket) {
 
 	so.On("instance viewport resize", func(args ...interface{}) {
 		if len(args) == 2 && args[0] != nil && args[1] != nil {
-			// User resized his viewport
 			cols := args[0].(float64)
 			rows := args[1].(float64)
+
 			core.ClientResizeViewPort(client, uint(cols), uint(rows))
 		}
 	})

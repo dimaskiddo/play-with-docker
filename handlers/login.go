@@ -33,6 +33,8 @@ func LoggedInUser(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(user)
 }
 
@@ -48,6 +50,8 @@ func ListProviders(rw http.ResponseWriter, req *http.Request) {
 	for name := range config.Providers[playground.Id] {
 		providers = append(providers, name)
 	}
+
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(providers)
 }
 
@@ -103,6 +107,7 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	providerName := vars["provider"]
 	playground := core.PlaygroundFindByDomain(req.Host)
+
 	if playground == nil {
 		log.Printf("Playground for domain %s was not found!", req.Host)
 		rw.WriteHeader(http.StatusBadRequest)
@@ -137,26 +142,60 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	user := &types.User{Provider: providerName}
-	if providerName == "github" {
+	switch providerName {
+	case "docker":
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: tok.AccessToken},
 		)
+
+		tc := oauth2.NewClient(ctx, ts)
+
+		dockerEndpoint := getDockerEndpoint(playground)
+		resp, err := tc.Get(fmt.Sprintf("https://%s/userinfo", dockerEndpoint))
+		if err != nil {
+			log.Printf("Could not get user from docker. Got: %v\n", err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		userInfo := map[string]interface{}{}
+		if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+			log.Printf("Could not decode user info. Got: %v\n", err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		user.ProviderUserId = strings.Split(userInfo["sub"].(string), "|")[1]
+		user.Name = userInfo["https://hub.docker.com"].(map[string]interface{})["username"].(string)
+		user.Email = userInfo["https://hub.docker.com"].(map[string]interface{})["email"].(string)
+		user.Avatar = fmt.Sprintf("https://avatars.io/twitter/%s", user.Name)
+
+	case "github":
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: tok.AccessToken},
+		)
+
 		tc := oauth2.NewClient(ctx, ts)
 		client := github.NewClient(tc)
+
 		u, _, err := client.Users.Get(ctx, "")
 		if err != nil {
 			log.Printf("Could not get user from github. Got: %v\n", err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		user.ProviderUserId = strconv.Itoa(int(u.GetID()))
 		user.Name = u.GetName()
 		user.Avatar = u.GetAvatarURL()
 		user.Email = u.GetEmail()
-	} else if providerName == "google" {
+
+	case "google":
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: tok.AccessToken},
 		)
+
 		tc := oauth2.NewClient(ctx, ts)
 
 		p, err := people.NewService(ctx, option.WithHTTPClient(tc))
@@ -177,33 +216,44 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 		user.Name = person.Names[0].GivenName
 		user.ProviderUserId = person.ResourceName
 
-	} else if providerName == "docker" {
+	case "azure":
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: tok.AccessToken},
 		)
+
 		tc := oauth2.NewClient(ctx, ts)
 
-		endpoint := getDockerEndpoint(playground)
-		resp, err := tc.Get(fmt.Sprintf("https://%s/userinfo", endpoint))
+		resp, err := tc.Get("https://graph.microsoft.com/v1.0/me")
 		if err != nil {
-			log.Printf("Could not get user from docker. Got: %v\n", err)
-			rw.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Could not get user from azure. Got: %v\n", err)
+			http.Error(rw, "Failed to get user information from Azure", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("Azure Graph API returned status %d\n", resp.StatusCode)
+			http.Error(rw, "Failed to get user information from Azure", http.StatusInternalServerError)
 			return
 		}
 
-		userInfo := map[string]interface{}{}
-		if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
-			log.Printf("Could not decode user info. Got: %v\n", err)
-			rw.WriteHeader(http.StatusInternalServerError)
+		azureUser := map[string]interface{}{}
+		if err := json.NewDecoder(resp.Body).Decode(&azureUser); err != nil {
+			log.Printf("Could not decode azure user info. Got: %v\n", err)
+			http.Error(rw, "Failed to parse user information from Azure", http.StatusInternalServerError)
 			return
 		}
 
-		user.ProviderUserId = strings.Split(userInfo["sub"].(string), "|")[1]
-		user.Name = userInfo["https://hub.docker.com"].(map[string]interface{})["username"].(string)
-		user.Email = userInfo["https://hub.docker.com"].(map[string]interface{})["email"].(string)
-		// Since DockerID doesn't return a user avatar, we try with twitter through avatars.io
-		// Worst case we get a generic avatar
-		user.Avatar = fmt.Sprintf("https://avatars.io/twitter/%s", user.Name)
+		user.ProviderUserId = azureUser["id"].(string)
+		user.Name = azureUser["displayName"].(string)
+		if mail, ok := azureUser["mail"].(string); ok && mail != "" {
+			user.Email = mail
+		} else if upn, ok := azureUser["userPrincipalName"].(string); ok {
+			user.Email = upn
+		}
+		user.Avatar = fmt.Sprintf("https://ui-avatars.com/api/?name=%s", strings.ReplaceAll(user.Name, " ", "+"))
+
+	default:
 	}
 
 	user, err = core.UserLogin(loginRequest, user)
@@ -217,8 +267,6 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 
 	host := "localhost"
 	if req.Host != "" {
-		// we get the parent domain so cookie is set
-		// in all subdomain and siblings
 		host = getParentDomain(req.Host)
 	}
 
@@ -250,8 +298,6 @@ func LoginCallback(rw http.ResponseWriter, req *http.Request) {
 </html>`, r)
 }
 
-// getParentDomain returns the parent domain (if available)
-// of the currend domain
 func getParentDomain(host string) string {
 	levels := strings.Split(host, ".")
 	if len(levels) > 2 {
@@ -264,5 +310,6 @@ func getDockerEndpoint(p *types.Playground) string {
 	if len(p.DockerHost) > 0 {
 		return p.DockerHost
 	}
+
 	return "login.docker.com"
 }

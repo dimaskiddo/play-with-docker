@@ -26,11 +26,14 @@ func GetUser(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	pui := PublicUserInfo{Id: u.Id, Avatar: u.Avatar, Name: u.Name}
+
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(pui)
 }

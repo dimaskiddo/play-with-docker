@@ -16,13 +16,13 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 	s, err := core.SessionGet(sessionId)
 	if err == storage.NotFoundError {
-		// Session doesn't exist (can happen if closing the sessions an reloading the page, or similar).
 		w.WriteHeader(http.StatusNotFound)
 		return
 	} else if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	if s.Stack != "" {
 		go core.SessionDeployStack(s)
 	}
@@ -44,6 +44,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
+
 	w.Write(index)
 }
 
@@ -56,5 +57,4 @@ func Landing(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	rw.Write(landings[playground.Id])
-
 }

@@ -91,7 +91,6 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 
 		return
 	} else {
-		// Automatically create a default instance if no stack was specified
 		if stack == "" {
 			log.Printf("Creating default instance for session %s\n", s.Id)
 
@@ -115,8 +114,10 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 		// If request is not a form, return sessionId in the body
 		if req.Header.Get("X-Requested-With") == "XMLHttpRequest" {
 			resp := NewSessionResponse{SessionId: s.Id, Hostname: hostname}
+
 			rw.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(rw).Encode(resp)
+
 			return
 		}
 

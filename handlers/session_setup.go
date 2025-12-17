@@ -39,10 +39,13 @@ func SessionSetup(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		if pwd.SessionNotEmpty(err) {
 			log.Println("Cannot setup a session that contains instances")
+
 			rw.WriteHeader(http.StatusConflict)
 			rw.Write([]byte("Cannot setup a session that contains instances"))
+
 			return
 		}
+
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return

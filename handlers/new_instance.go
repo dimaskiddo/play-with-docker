@@ -55,8 +55,6 @@ func NewInstance(rw http.ResponseWriter, req *http.Request) {
 		body.DindVolumeSize = playground.DindVolumeSize
 	}
 
-	// TODO I don't like how this is implemented here. NewInstance
-	// should be a function that's in the Playground struct.
 	if playground.Privileged {
 		body.Privileged = true
 	}
@@ -68,11 +66,12 @@ func NewInstance(rw http.ResponseWriter, req *http.Request) {
 			fmt.Fprintln(rw, `{"error": "out_of_capacity"}`)
 			return
 		}
+
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
-		//TODO: Set a status error
 	} else {
+		rw.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(rw).Encode(i)
 	}
 }

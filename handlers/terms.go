@@ -28,20 +28,24 @@ func (t *terminal) Go(ch chan info, ech chan *types.Instance) {
 			}
 		}
 	}()
+
 	go func() {
 		encoder := encoding.Replacement.NewEncoder()
 		buf := make([]byte, 1024)
+
 		for {
 			n, err := t.conn.Read(buf)
 			if err != nil {
 				ech <- t.instance
 				return
 			}
+
 			b, err := encoder.Bytes(buf[:n])
 			if err != nil {
 				ech <- t.instance
 				return
 			}
+
 			ch <- info{name: t.instance.Name, data: b}
 		}
 	}()
@@ -165,6 +169,7 @@ func (m *manager) process() {
 			if t != nil {
 				t.write <- i.data
 			}
+
 		case instance := <-m.errorCh:
 			// check if it still exists before reconnecting
 			i := core.InstanceGet(&types.Session{Id: instance.SessionId}, instance.Name)
@@ -190,11 +195,14 @@ func (m *manager) Start() error {
 	if err != nil {
 		return err
 	}
+
 	for _, i := range instances {
 		m.instances[i.Name] = i
 		m.connect(i)
 	}
+
 	go m.process()
+
 	return nil
 }
 
@@ -214,13 +222,13 @@ func NewManager(s *types.Session) (*manager, error) {
 			return
 		}
 
-		// There is a new instance in a session we are tracking. We should track it's terminal
 		instanceName := args[0].(string)
 		instance := core.InstanceGet(s, instanceName)
 		if instance == nil {
 			log.Printf("Instance [%s] was not found in session [%s]\n", instanceName, sessionId)
 			return
 		}
+
 		m.trackInstance(instance)
 		m.connect(instance)
 	})
@@ -230,9 +238,9 @@ func NewManager(s *types.Session) (*manager, error) {
 			return
 		}
 
-		// There is a new instance in a session we are tracking. We should track it's terminal
 		instanceName := args[0].(string)
 		instance := &types.Instance{Name: instanceName}
+
 		m.disconnect(instance)
 	})
 
