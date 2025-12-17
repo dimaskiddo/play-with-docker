@@ -1,12 +1,12 @@
-(function() {
+(function () {
   'use strict';
 
   var app = angular.module('DockerPlay', ['ngMaterial', 'ngFileUpload', 'ngclipboard']);
 
   // Automatically redirects user to a new session when bypassing captcha.
   // Controller keeps code/logic separate from the HTML
-  app.controller("BypassController", ['$scope', '$log', '$http', '$location', '$timeout', function($scope, $log, $http, $location, $timeout) {
-    setTimeout(function() {
+  app.controller("BypassController", ['$scope', '$log', '$http', '$location', '$timeout', function ($scope, $log, $http, $location, $timeout) {
+    setTimeout(function () {
       document.getElementById("welcomeFormBypass").submit();
     }, 500);
   }]);
@@ -14,12 +14,12 @@
   function SessionBuilderModalController($mdDialog, $scope) {
     $scope.createBuilderTerminal();
 
-    $scope.closeSessionBuilder = function() {
+    $scope.closeSessionBuilder = function () {
       $mdDialog.cancel();
     }
   }
 
-  app.controller('PlayController', ['$scope', '$rootScope', '$log', '$http', '$location', '$timeout', '$mdDialog', '$window', 'TerminalService', 'KeyboardShortcutService', 'InstanceService', 'SessionService', 'Upload', function($scope, $rootScope,  $log, $http, $location, $timeout, $mdDialog, $window, TerminalService, KeyboardShortcutService, InstanceService, SessionService, Upload) {
+  app.controller('PlayController', ['$scope', '$rootScope', '$log', '$http', '$location', '$timeout', '$mdDialog', '$window', 'TerminalService', 'KeyboardShortcutService', 'InstanceService', 'SessionService', 'Upload', function ($scope, $rootScope, $log, $http, $location, $timeout, $mdDialog, $window, TerminalService, KeyboardShortcutService, InstanceService, SessionService, Upload) {
     $scope.sessionId = SessionService.getCurrentSessionId();
     $rootScope.instances = [];
     $scope.idx = {};
@@ -29,7 +29,7 @@
     $scope.isAlive = true;
     $scope.ttl = '--:--:--';
     $scope.connected = false;
-    $scope.type = {windows: false};
+    $scope.type = { windows: false };
     $scope.isInstanceBeingCreated = false;
     $scope.newInstanceBtnText = '+ Add new instance';
     $scope.deleteInstanceBtnText = 'Delete';
@@ -37,75 +37,73 @@
     $scope.uploadProgress = 0;
 
     $scope.uploadFiles = function (files, invalidFiles) {
-        let total = files.length;
-        let uploadFile = function() {
-          let file = files.shift();
-          if (!file){
-            $scope.uploadMessage = "";
-            $scope.uploadProgress = 0;
-            return
-          }
-          $scope.uploadMessage = "Uploading file(s) " + (total - files.length) + "/"+ total + " : " + file.name;
-          let upload = Upload.upload({url: '/sessions/' + $scope.sessionId + '/instances/' + $rootScope.selectedInstance.name + '/uploads', data: {file: file}, method: 'POST'})
-            .then(function(){}, function(){}, function(evt) {
-              $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total);
-            });
-
-          // process next file
-          upload.finally(uploadFile);
+      let total = files.length;
+      let uploadFile = function () {
+        let file = files.shift();
+        if (!file) {
+          $scope.uploadMessage = "";
+          $scope.uploadProgress = 0;
+          return
         }
+        $scope.uploadMessage = "Uploading file(s) " + (total - files.length) + "/" + total + " : " + file.name;
+        let upload = Upload.upload({ url: '/sessions/' + $scope.sessionId + '/instances/' + $rootScope.selectedInstance.name + '/uploads', data: { file: file }, method: 'POST' })
+          .then(function () { }, function () { }, function (evt) {
+            $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total);
+          });
 
-        uploadFile();
+        upload.finally(uploadFile);
+      }
+
+      uploadFile();
     }
 
     var selectedKeyboardShortcuts = KeyboardShortcutService.getCurrentShortcuts();
 
     $scope.resizeHandler = null;
 
-    angular.element($window).bind('resize', function() {
+    angular.element($window).bind('resize', function () {
       if ($rootScope.selectedInstance) {
         if (!$scope.resizeHandler) {
-            $scope.resizeHandler = setTimeout(function() {
-                $scope.resizeHandler = null
-                $scope.resize($scope.selectedInstance.term.proposeGeometry());
-            }, 1000);
+          $scope.resizeHandler = setTimeout(function () {
+            $scope.resizeHandler = null
+            $scope.resize($scope.selectedInstance.term.proposeGeometry());
+          }, 1000);
         }
       }
     });
 
-    $scope.$on("settings:shortcutsSelected", function(e, preset) {
+    $scope.$on("settings:shortcutsSelected", function (e, preset) {
       selectedKeyboardShortcuts = preset;
     });
 
 
-    $scope.showAlert = function(title, content, parent, cb) {
+    $scope.showAlert = function (title, content, parent, cb) {
       $mdDialog.show(
         $mdDialog.alert()
-        .parent(angular.element(document.querySelector(parent || '#popupContainer')))
-        .clickOutsideToClose(true)
-        .title(title)
-        .textContent(content)
-        .ok('Got it!')
-      ).finally(function() {
+          .parent(angular.element(document.querySelector(parent || '#popupContainer')))
+          .clickOutsideToClose(true)
+          .title(title)
+          .textContent(content)
+          .ok('Got it!')
+      ).finally(function () {
         if (cb) {
-           cb();
+          cb();
         }
       });
     }
 
-    $scope.resize = function(geometry) {
+    $scope.resize = function (geometry) {
       $scope.socket.emit('instance viewport resize', geometry.cols, geometry.rows);
     }
 
     KeyboardShortcutService.setResizeFunc($scope.resize);
 
-    $scope.closeSession = function() {
-      // Remove alert before closing browser tab
+    $scope.closeSession = function () {
       window.onbeforeunload = null;
       $scope.socket.emit('session close');
     }
 
-    $scope.upsertInstance = function(info) {
+    $scope.upsertInstance = function (info) {
       var i = info;
       if (!$scope.idx[i.name]) {
         $rootScope.instances.push(i);
@@ -119,32 +117,32 @@
       return $scope.idx[i.name];
     }
 
-    $scope.newInstance = function() {
+    $scope.newInstance = function () {
       updateNewInstanceBtnState(true);
-      var instanceType = $scope.type.windows ? 'windows': 'linux';
+      var instanceType = $scope.type.windows ? 'windows' : 'linux';
       $http({
         method: 'POST',
         url: '/sessions/' + $scope.sessionId + '/instances',
-        data : { ImageName : InstanceService.getDesiredImage(), type: instanceType }
-      }).then(function(response) {
+        data: { ImageName: InstanceService.getDesiredImage(), type: instanceType }
+      }).then(function (response) {
         $scope.upsertInstance(response.data);
-      }, function(response) {
+      }, function (response) {
         if (response.status == 409) {
           $scope.showAlert('Max instances reached', 'Maximum number of instances reached')
         } else if (response.status == 503 && response.data.error == 'out_of_capacity') {
           $scope.showAlert('Out Of Capacity', 'We are really sorry. But we are currently out of capacity and cannot create new instances. Please try again later.')
         }
-      }).finally(function() {
+      }).finally(function () {
         updateNewInstanceBtnState(false);
       });
     }
 
-    $scope.setSessionState = function(state) {
+    $scope.setSessionState = function (state) {
       $scope.ready = state;
 
       if (!state) {
         $mdDialog.show({
-          onComplete: function(){SessionBuilderModalController($mdDialog, $scope)},
+          onComplete: function () { SessionBuilderModalController($mdDialog, $scope) },
           contentElement: '#builderDialog',
           parent: angular.element(document.body),
           clickOutsideToClose: false,
@@ -154,25 +152,25 @@
       }
     }
 
-    $scope.loadPlaygroundConf = function() {
+    $scope.loadPlaygroundConf = function () {
       $http({
         method: 'GET',
         url: '/my/playground',
-      }).then(function(response) {
+      }).then(function (response) {
         $scope.playground = response.data;
       });
 
     }
-    $scope.getSession = function(sessionId) {
+    $scope.getSession = function (sessionId) {
       $http({
         method: 'GET',
         url: '/sessions/' + $scope.sessionId,
-      }).then(function(response) {
+      }).then(function (response) {
         $scope.setSessionState(response.data.ready);
 
         if (response.data.created_at) {
           $scope.expiresAt = moment(response.data.expires_at);
-          setInterval(function() {
+          setInterval(function () {
             $scope.ttl = moment.utc($scope.expiresAt.diff(moment())).format('HH:mm:ss');
             $scope.$apply();
           }, 1000);
@@ -186,82 +184,82 @@
           $scope.idxByHostname[instance.hostname] = instance;
         }
 
-	var base = '';
-	if (window.location.protocol == 'http:') {
-		base = 'ws://';
-	} else {
-		base = 'wss://';
-	}
-	base += window.location.host;
-	if (window.location.port) {
-		base += ':' + window.location.port;
-	}
+        var base = '';
+        if (window.location.protocol == 'http:') {
+          base = 'ws://';
+        } else {
+          base = 'wss://';
+        }
+        base += window.location.host;
+        if (window.location.port) {
+          base += ':' + window.location.port;
+        }
 
-	var socket = new ReconnectingWebSocket(base + '/sessions/' + sessionId + '/ws/', null, {reconnectInterval: 1000});
-	socket.listeners = {};
+        var socket = new ReconnectingWebSocket(base + '/sessions/' + sessionId + '/ws/', null, { reconnectInterval: 1000 });
+        socket.listeners = {};
 
-	socket.on = function(name, cb) {
-		if (!socket.listeners[name]) {
-			socket.listeners[name] = [];
-		}
-		socket.listeners[name].push(cb);
-	}
+        socket.on = function (name, cb) {
+          if (!socket.listeners[name]) {
+            socket.listeners[name] = [];
+          }
+          socket.listeners[name].push(cb);
+        }
 
-	socket.emit = function() {
-		var name = arguments[0]
-		var args = [];
-		for (var i = 1; i < arguments.length; i++) {
-			args.push(arguments[i]);
-		}
-		socket.send(JSON.stringify({name: name, args: args}));
-	}
+        socket.emit = function () {
+          var name = arguments[0]
+          var args = [];
+          for (var i = 1; i < arguments.length; i++) {
+            args.push(arguments[i]);
+          }
+          socket.send(JSON.stringify({ name: name, args: args }));
+        }
 
-	socket.addEventListener('open', function (event) {
+        socket.addEventListener('open', function (event) {
           $scope.connected = true;
-	  for (var i in $rootScope.instances) {
-		  var instance = $rootScope.instances[i];
-		  if (instance.term) {
-			  instance.term.setOption('disableStdin', false);
-		  }
-	  }
-	});
-	socket.addEventListener('close', function (event) {
-          $scope.connected = false;
-	  for (var i in $rootScope.instances) {
-		  var instance = $rootScope.instances[i];
-		  if (instance.term) {
-			  instance.term.setOption('disableStdin', true);
-		  }
-	  }
-	});
-	socket.addEventListener('message', function (event) {
-		var m = JSON.parse(event.data);
-		var ls = socket.listeners[m.name];
-		if (ls) {
-			for (var i=0; i<ls.length; i++) {
-				var l = ls[i];
-				l.apply(l, m.args);
-			}
-		}
-	});
-
-
-        socket.on('instance terminal status', function(name, status) {
-            var instance = $scope.idx[name];
-            if (instance) {
-                instance.status = status;
+          for (var i in $rootScope.instances) {
+            var instance = $rootScope.instances[i];
+            if (instance.term) {
+              instance.term.setOption('disableStdin', false);
             }
+          }
+        });
+        socket.addEventListener('close', function (event) {
+          $scope.connected = false;
+          for (var i in $rootScope.instances) {
+            var instance = $rootScope.instances[i];
+            if (instance.term) {
+              instance.term.setOption('disableStdin', true);
+            }
+          }
+        });
+        socket.addEventListener('message', function (event) {
+          var m = JSON.parse(event.data);
+          var ls = socket.listeners[m.name];
+          if (ls) {
+            for (var i = 0; i < ls.length; i++) {
+              var l = ls[i];
+              l.apply(l, m.args);
+            }
+          }
         });
 
-        socket.on('session ready', function(ready) {
+
+        socket.on('instance terminal status', function (name, status) {
+          var instance = $scope.idx[name];
+          if (instance) {
+            instance.status = status;
+          }
+        });
+
+        socket.on('session ready', function (ready) {
           $scope.setSessionState(ready);
         });
 
-        socket.on('session builder out', function(data) {
+        socket.on('session builder out', function (data) {
           $scope.builderTerminal.write(data);
         });
 
-        socket.on('instance terminal out', function(name, data) {
+        socket.on('instance terminal out', function (name, data) {
           var instance = $scope.idx[name];
           if (!instance) {
             return;
@@ -279,109 +277,107 @@
           }
         });
 
-        socket.on('session end', function() {
-          $scope.showAlert('Session timed out!', 'Your session has expired and all of your instances have been deleted.', '#sessionEnd', function() {
+        socket.on('session end', function () {
+          $scope.showAlert('Session timed out!', 'Your session has expired and all of your instances have been deleted.', '#sessionEnd', function () {
             window.location.href = '/';
           });
           $scope.isAlive = false;
           socket.close();
         });
 
-        socket.on('instance new', function(name, ip, hostname, proxyHost) {
-          var instance = $scope.upsertInstance({ name: name, ip: ip, hostname: hostname, proxy_host: proxyHost, session_id: $scope.sessionId});
-          $scope.$apply(function() {
+        socket.on('instance new', function (name, ip, hostname, proxyHost) {
+          var instance = $scope.upsertInstance({ name: name, ip: ip, hostname: hostname, proxy_host: proxyHost, session_id: $scope.sessionId });
+          $scope.$apply(function () {
             $scope.showInstance(instance);
           });
         });
 
-        socket.on('instance delete', function(name) {
+        socket.on('instance delete', function (name) {
           $scope.removeInstance(name);
           $scope.$apply();
         });
 
-        socket.on('instance viewport resize', function(cols, rows) {
-            if (cols == 0 || rows == 0) {
-                return
-            }
-          // viewport has changed, we need to resize all terminals
-          $rootScope.instances.forEach(function(instance) {
-              if (instance.term) {
-                instance.term.resize(cols, rows);
-                if (instance.buffer) {
-                  instance.term.write(instance.buffer);
-                  instance.buffer = '';
-                }
+        socket.on('instance viewport resize', function (cols, rows) {
+          if (cols == 0 || rows == 0) {
+            return
+          }
+          $rootScope.instances.forEach(function (instance) {
+            if (instance.term) {
+              instance.term.resize(cols, rows);
+              if (instance.buffer) {
+                instance.term.write(instance.buffer);
+                instance.buffer = '';
               }
+            }
           });
         });
 
-        socket.on('instance stats', function(stats) {
-          if (! $scope.idx[stats.instance]) {
-              return
+        socket.on('instance stats', function (stats) {
+          if (!$scope.idx[stats.instance]) {
+            return
           }
           $scope.idx[stats.instance].mem = stats.mem;
           $scope.idx[stats.instance].cpu = stats.cpu;
           $scope.$apply();
         });
 
-        socket.on('instance docker swarm status', function(status) {
-            if (!$scope.idx[status.instance]) {
-                return
-            }
-            if (status.is_manager) {
-                $scope.idx[status.instance].isManager = true
-            } else if (status.is_worker) {
-                $scope.idx[status.instance].isManager = false
-            } else {
-                $scope.idx[status.instance].isManager = null
-            }
-            $scope.$apply();
-        });
-
-        socket.on('instance k8s status', function(status) {
-            if (!$scope.idx[status.instance]) {
-                return
-            }
-            if (status.is_manager) {
-                $scope.idx[status.instance].isK8sManager = true
-            } else if (status.is_worker) {
-                $scope.idx[status.instance].isK8sManager = false
-            } else {
-                $scope.idx[status.instance].isK8sManager = null
-            }
-            $scope.$apply();
-        });
-
-        socket.on('instance docker ports', function(status) {
+        socket.on('instance docker swarm status', function (status) {
           if (!$scope.idx[status.instance]) {
-              return
+            return
+          }
+          if (status.is_manager) {
+            $scope.idx[status.instance].isManager = true
+          } else if (status.is_worker) {
+            $scope.idx[status.instance].isManager = false
+          } else {
+            $scope.idx[status.instance].isManager = null
+          }
+          $scope.$apply();
+        });
+
+        socket.on('instance k8s status', function (status) {
+          if (!$scope.idx[status.instance]) {
+            return
+          }
+          if (status.is_manager) {
+            $scope.idx[status.instance].isK8sManager = true
+          } else if (status.is_worker) {
+            $scope.idx[status.instance].isK8sManager = false
+          } else {
+            $scope.idx[status.instance].isK8sManager = null
+          }
+          $scope.$apply();
+        });
+
+        socket.on('instance docker ports', function (status) {
+          if (!$scope.idx[status.instance]) {
+            return
           }
           $scope.idx[status.instance].ports = status.ports;
           $scope.$apply();
         });
 
-        socket.on('instance docker swarm ports', function(status) {
-            for(var i in status.instances) {
-                var instance = status.instances[i];
-                if ($scope.idxByHostname[instance]) {
-                    $scope.idxByHostname[instance].swarmPorts = status.ports;
-                }
+        socket.on('instance docker swarm ports', function (status) {
+          for (var i in status.instances) {
+            var instance = status.instances[i];
+            if ($scope.idxByHostname[instance]) {
+              $scope.idxByHostname[instance].swarmPorts = status.ports;
             }
-            $scope.$apply();
+          }
+          $scope.$apply();
         });
 
         $scope.socket = socket;
 
-
         // If instance is passed in URL, select it
         let inst = $scope.idx[$location.hash()];
         if (inst) {
-            $scope.showInstance(inst);
-        } else if($rootScope.instances.length > 0) {
-            // if no instance has been passed, select the first.
-            $scope.showInstance($rootScope.instances[0]);
+          $scope.showInstance(inst);
+        } else if ($rootScope.instances.length > 0) {
+          // if no instance has been passed, select the first.
+          $scope.showInstance($rootScope.instances[0]);
         }
-      }, function(response) {
+      }, function (response) {
         if (response.status == 404) {
           document.write('session not found');
           return
@@ -389,7 +385,7 @@
       });
     }
 
-    $scope.openPort = function(instance) {
+    $scope.openPort = function (instance) {
       var port = prompt('What port would you like to open?');
       if (!port) return;
 
@@ -397,36 +393,37 @@
       window.open(url, '_blank');
     }
 
-    $scope.getProxyUrl = function(instance, port) {
-      var url = 'http://' + instance.proxy_host + '-' + port + '.direct.' + $scope.host;
+    $scope.getProxyUrl = function (instance, port) {
+      var subdomain = $scope.playground && $scope.playground.l2_subdomain ? $scope.playground.l2_subdomain : 'apps';
+      var url = instance.proxy_host + '-' + port + '.' + subdomain + '.' + $scope.host;
 
       return url;
     }
 
-    $scope.showInstance = function(instance) {
+    $scope.showInstance = function (instance) {
       $rootScope.selectedInstance = instance;
       $location.hash(instance.name);
       if (!instance.term) {
-          $timeout(function() {
-              createTerminal(instance);
-              TerminalService.setFontSize(TerminalService.getFontSize());
-              instance.term.focus();
-              $timeout(function() {
-              }, 0, false);
+        $timeout(function () {
+          createTerminal(instance);
+          TerminalService.setFontSize(TerminalService.getFontSize());
+          instance.term.focus();
+          $timeout(function () {
           }, 0, false);
-          return
+        }, 0, false);
+        return
       }
       instance.term.focus();
     }
 
-    $scope.removeInstance = function(name) {
-        if ($scope.idx[name]) {
-            var handler = $scope.idx[name].terminalBufferInterval;
-            clearInterval(handler);
-        }
+    $scope.removeInstance = function (name) {
+      if ($scope.idx[name]) {
+        var handler = $scope.idx[name].terminalBufferInterval;
+        clearInterval(handler);
+      }
       if ($scope.idx[name]) {
         delete $scope.idx[name];
-        $rootScope.instances = $rootScope.instances.filter(function(i) {
+        $rootScope.instances = $rootScope.instances.filter(function (i) {
           return i.name != name;
         });
         if ($rootScope.instances.length) {
@@ -435,31 +432,31 @@
       }
     }
 
-    $scope.deleteInstance = function(instance) {
+    $scope.deleteInstance = function (instance) {
       updateDeleteInstanceBtnState(true);
       $http({
         method: 'DELETE',
         url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name,
-      }).then(function(response) {
+      }).then(function (response) {
         $scope.removeInstance(instance.name);
-      }, function(response) {
+      }, function (response) {
         console.log('error', response);
-      }).finally(function() {
+      }).finally(function () {
         updateDeleteInstanceBtnState(false);
       });
     };
 
-    $scope.openEditor = function(instance) {
-      var w = window.screen.availWidth * 45  / 100;
-      var h = window.screen.availHeight * 45  / 100;
-      $window.open('/sessions/' + instance.session_id + '/instances/'+instance.name+'/editor', 'editor',
-        'width='+w+',height='+h+',resizable,scrollbars=yes,status=1');
+    $scope.openEditor = function (instance) {
+      var w = window.screen.availWidth * 45 / 100;
+      var h = window.screen.availHeight * 45 / 100;
+      $window.open('/sessions/' + instance.session_id + '/instances/' + instance.name + '/editor', 'editor',
+        'width=' + w + ',height=' + h + ',resizable,scrollbars=yes,status=1');
     };
 
     $scope.loadPlaygroundConf();
     $scope.getSession($scope.sessionId);
 
-    $scope.createBuilderTerminal = function() {
+    $scope.createBuilderTerminal = function () {
       var builderTerminalContainer = document.getElementById('builder-terminal');
       let term = new Terminal({
         cursorBlink: false
@@ -468,6 +465,7 @@
       term.open(builderTerminalContainer);
       $scope.builderTerminal = term;
     }
+
     function createTerminal(instance, cb) {
       if (instance.term) {
         return instance.term;
@@ -482,7 +480,6 @@
 
       term.open(terminalContainer);
 
-
       const handleCopy = (e) => {
         // Ctrl + Alt + C
         if (e.ctrlKey && e.altKey && (e.keyCode == 67)) {
@@ -491,33 +488,33 @@
         }
       };
 
-      term.attachCustomKeyEventHandler(function(e) {
+      term.attachCustomKeyEventHandler(function (e) {
         // handleCopy(e);
         if (selectedKeyboardShortcuts == null) return;
 
         var presets = selectedKeyboardShortcuts.presets
-        .filter(function(preset) { return preset.keyCode == e.keyCode })
-        .filter(function(preset) { return (preset.metaKey == undefined && !e.metaKey) || preset.metaKey == e.metaKey })
-        .filter(function(preset) { return (preset.ctrlKey == undefined && !e.ctrlKey) || preset.ctrlKey == e.ctrlKey })
-        .filter(function(preset) { return (preset.altKey == undefined && !e.altKey) || preset.altKey == e.altKey })
-        .forEach(function(preset) { preset.action({ terminal : term, e })});
+          .filter(function (preset) { return preset.keyCode == e.keyCode })
+          .filter(function (preset) { return (preset.metaKey == undefined && !e.metaKey) || preset.metaKey == e.metaKey })
+          .filter(function (preset) { return (preset.ctrlKey == undefined && !e.ctrlKey) || preset.ctrlKey == e.ctrlKey })
+          .filter(function (preset) { return (preset.altKey == undefined && !e.altKey) || preset.altKey == e.altKey })
+          .forEach(function (preset) { preset.action({ terminal: term, e }) });
       });
 
       // Set geometry during the next tick, to avoid race conditions.
-
-      setTimeout(function() {
+      setTimeout(function () {
         $scope.resize(term.proposeGeometry());
       }, 0);
 
       instance.terminalBuffer = '';
-      instance.terminalBufferInterval = setInterval(function() {
-          if (instance.terminalBuffer.length > 0) {
-              $scope.socket.emit('instance terminal in', instance.name, instance.terminalBuffer);
-              instance.terminalBuffer = '';
-          }
+      instance.terminalBufferInterval = setInterval(function () {
+        if (instance.terminalBuffer.length > 0) {
+          $scope.socket.emit('instance terminal in', instance.name, instance.terminalBuffer);
+          instance.terminalBuffer = '';
+        }
       }, 70);
-      term.on('data', function(d) {
-          instance.terminalBuffer += d;
+
+      term.on('data', function (d) {
+        instance.terminalBuffer += d;
       });
 
       instance.term = term;
@@ -547,382 +544,382 @@
       }
     }
   }])
-  .config(['$mdIconProvider', '$locationProvider', '$mdThemingProvider', function($mdIconProvider, $locationProvider, $mdThemingProvider) {
-    $locationProvider.html5Mode({enabled: true, requireBase: false});
-    $mdIconProvider.defaultIconSet('../assets/social-icons.svg', 24);
-    $mdThemingProvider.theme('kube')
-      .primaryPalette('grey')
-      .accentPalette('grey');
-  }])
-  .component('settingsIcon', {
-    template : "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>settings</md-icon></md-button>",
-    controller : function($mdDialog) {
-      var $ctrl = this;
-      $ctrl.onClick = function() {
-        $mdDialog.show({
-          controller : function() {},
-          template : "<settings-dialog></settings-dialog>",
-          parent: angular.element(document.body),
-          clickOutsideToClose : true
-        })
+    .config(['$mdIconProvider', '$locationProvider', '$mdThemingProvider', function ($mdIconProvider, $locationProvider, $mdThemingProvider) {
+      $locationProvider.html5Mode({ enabled: true, requireBase: false });
+      $mdIconProvider.defaultIconSet('../assets/social-icons.svg', 24);
+      $mdThemingProvider.theme('kube')
+        .primaryPalette('grey')
+        .accentPalette('grey');
+    }])
+    .component('settingsIcon', {
+      template: "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>settings</md-icon></md-button>",
+      controller: function ($mdDialog) {
+        var $ctrl = this;
+        $ctrl.onClick = function () {
+          $mdDialog.show({
+            controller: function () { },
+            template: "<settings-dialog></settings-dialog>",
+            parent: angular.element(document.body),
+            clickOutsideToClose: true
+          })
+        }
       }
-    }
-  })
-  .component('templatesIcon', {
-    template : "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>build</md-icon></md-button>",
-    controller : function($mdDialog) {
-      var $ctrl = this;
-      $ctrl.onClick = function() {
-        $mdDialog.show({
-          controller : function() {},
-          template : "<templates-dialog></templates-dialog>",
-          parent: angular.element(document.body),
-          clickOutsideToClose : true
-        })
+    })
+    .component('templatesIcon', {
+      template: "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>build</md-icon></md-button>",
+      controller: function ($mdDialog) {
+        var $ctrl = this;
+        $ctrl.onClick = function () {
+          $mdDialog.show({
+            controller: function () { },
+            template: "<templates-dialog></templates-dialog>",
+            parent: angular.element(document.body),
+            clickOutsideToClose: true
+          })
+        }
       }
-    }
-  })
-  .component("templatesDialog", {
-    templateUrl : "templates-modal.html",
-    controller : function($mdDialog, $scope, SessionService) {
-      var $ctrl = this;
-      $scope.building = false;
-	  $scope.templates = SessionService.getAvailableTemplates();
-      $ctrl.close = function() {
-        $mdDialog.cancel();
-      }
-	  $ctrl.setupSession = function(setup) {
-		$scope.building = true;
-		SessionService.setup(setup, function(err) {
+    })
+    .component("templatesDialog", {
+      templateUrl: "templates-modal.html",
+      controller: function ($mdDialog, $scope, SessionService) {
+        var $ctrl = this;
+        $scope.building = false;
+        $scope.templates = SessionService.getAvailableTemplates();
+        $ctrl.close = function () {
+          $mdDialog.cancel();
+        }
+        $ctrl.setupSession = function (setup) {
+          $scope.building = true;
+          SessionService.setup(setup, function (err) {
             $scope.building = false;
-			if (err) {
-				$scope.errorMessage = err;
-				return;
-			}
-			$ctrl.close();
-		});
-	  }
-    }
-  })
-  .component("settingsDialog", {
-    templateUrl : "settings-modal.html",
-    controller : function($mdDialog, KeyboardShortcutService, $rootScope, InstanceService, TerminalService) {
-      var $ctrl = this;
-      $ctrl.$onInit = function() {
-        $ctrl.keyboardShortcutPresets = KeyboardShortcutService.getAvailablePresets();
-        $ctrl.selectedShortcutPreset = KeyboardShortcutService.getCurrentShortcuts();
-        $ctrl.instanceImages = InstanceService.getAvailableImages();
-        $ctrl.selectedInstanceImage = InstanceService.getDesiredImage();
-        $ctrl.terminalFontSizes = TerminalService.getFontSizes();
-      };
-
-      $ctrl.currentShortcutConfig = function(value) {
-        if (value !== undefined) {
-          value = JSON.parse(value);
-          KeyboardShortcutService.setCurrentShortcuts(value);
-          $ctrl.selectedShortcutPreset = angular.copy(KeyboardShortcutService.getCurrentShortcuts());
-          $rootScope.$broadcast('settings:shortcutsSelected', $ctrl.selectedShortcutPreset);
-        }
-        return JSON.stringify(KeyboardShortcutService.getCurrentShortcuts());
-      };
-
-      $ctrl.currentDesiredInstanceImage = function(value) {
-        if (value !== undefined) {
-          InstanceService.setDesiredImage(value);
-        }
-        return InstanceService.getDesiredImage(value);
-      };
-      $ctrl.currentTerminalFontSize = function(value) {
-        if (value !== undefined) {
-          // set font size
-          TerminalService.setFontSize(value);
-          return;
-        }
-
-        return TerminalService.getFontSize();
-      }
-
-      $ctrl.close = function() {
-        $mdDialog.cancel();
-      }
-    }
-  })
-  .service("SessionService", function($http) {
-	var templates = [
-		{
-			title: '3 Managers and 2 Workers',
-			icon: '/assets/swarm.png',
-			setup: {
-				instances: [
-					{hostname: 'manager1', is_swarm_manager: true},
-					{hostname: 'manager2', is_swarm_manager: true},
-					{hostname: 'manager3', is_swarm_manager: true},
-					{hostname: 'worker1', is_swarm_worker: true},
-					{hostname: 'worker2', is_swarm_worker: true}
-				]
-			}
-		},
-		{
-			title: '5 Managers and no workers',
-			icon: '/assets/swarm.png',
-			setup: {
-				instances: [
-					{hostname: 'manager1', is_swarm_manager: true},
-					{hostname: 'manager2', is_swarm_manager: true},
-					{hostname: 'manager3', is_swarm_manager: true},
-					{hostname: 'manager4', is_swarm_manager: true},
-					{hostname: 'manager5', is_swarm_manager: true}
-				]
-			}
-		},
-		{
-                        title: '1 Manager and 1 Worker',
-                        icon: '/assets/swarm.png',
-                        setup: {
-                                instances: [
-                                        {hostname: 'manager1', is_swarm_manager: true},
-                                        {hostname: 'worker1', is_swarm_worker: true}
-                                ]
-                        }
-                }
-	];
-
-    return {
-      getAvailableTemplates: getAvailableTemplates,
-	  getCurrentSessionId: getCurrentSessionId,
-	  setup: setup,
-    };
-
-	function getCurrentSessionId() {
-	  return window.location.pathname.replace('/p/', '');
-    }
-    function getAvailableTemplates() {
-      return templates;
-    }
-    function setup(plan, cb) {
-      return $http
-      .post("/sessions/" + getCurrentSessionId() + "/setup", plan)
-      .then(function(response) {
-		if (cb) cb();
-      }, function(response) {
-		if (cb) cb(response.data);
-	  });
-    }
-  })
-  .service("InstanceService", function($http) {
-    var instanceImages = [];
-    _prepopulateAvailableImages();
-
-    return {
-      getAvailableImages : getAvailableImages,
-      setDesiredImage : setDesiredImage,
-      getDesiredImage : getDesiredImage,
-    };
-
-    function getAvailableImages() {
-      return instanceImages;
-    }
-
-    function getDesiredImage() {
-      var image = localStorage.getItem("settings.desiredImage");
-      if (image == null)
-        return instanceImages[0];
-      return image;
-    }
-
-    function setDesiredImage(image) {
-      if (image === null)
-        localStorage.removeItem("settings.desiredImage");
-      else
-        localStorage.setItem("settings.desiredImage", image);
-    }
-
-    function _prepopulateAvailableImages() {
-      return $http
-      .get("/instances/images")
-      .then(function(response) {
-        instanceImages = response.data;
-      });
-    }
-
-  })
-  .run(function(InstanceService) { /* forcing pre-populating for now */ })
-  .service("KeyboardShortcutService", ['TerminalService', function(TerminalService) {
-    var resizeFunc;
-
-    return {
-      getAvailablePresets : getAvailablePresets,
-      getCurrentShortcuts : getCurrentShortcuts,
-      setCurrentShortcuts : setCurrentShortcuts,
-      setResizeFunc : setResizeFunc
-    };
-
-    function setResizeFunc(f) {
-      resizeFunc = f;
-    }
-
-    function getAvailablePresets() {
-      return [
-        {
-          name : "None",
-          presets : [
-            {
-              description : "Toggle terminal fullscreen", command : "Alt+enter", altKey : true, keyCode : 13, action : function(context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); }
-            },
-            {
-              description: "Increase Font Size",
-              command: "Ctrl++",
-              ctrlKey : true,
-              keyCode: 187,
-              action: function(context) {
-                TerminalService.increaseFontSize();
-                context.e.preventDefault()
-              }
-            },
-            {
-              description: "Decrease Font Size",
-              command: "Ctrl+-",
-              ctrlKey: true,
-              keyCode: 189,
-              action: function(context) {
-                context.e.preventDefault()
-                TerminalService.decreaseFontSize();
-              }
+            if (err) {
+              $scope.errorMessage = err;
+              return;
             }
-          ]
+            $ctrl.close();
+          });
+        }
+      }
+    })
+    .component("settingsDialog", {
+      templateUrl: "settings-modal.html",
+      controller: function ($mdDialog, KeyboardShortcutService, $rootScope, InstanceService, TerminalService) {
+        var $ctrl = this;
+        $ctrl.$onInit = function () {
+          $ctrl.keyboardShortcutPresets = KeyboardShortcutService.getAvailablePresets();
+          $ctrl.selectedShortcutPreset = KeyboardShortcutService.getCurrentShortcuts();
+          $ctrl.instanceImages = InstanceService.getAvailableImages();
+          $ctrl.selectedInstanceImage = InstanceService.getDesiredImage();
+          $ctrl.terminalFontSizes = TerminalService.getFontSizes();
+        };
+
+        $ctrl.currentShortcutConfig = function (value) {
+          if (value !== undefined) {
+            value = JSON.parse(value);
+            KeyboardShortcutService.setCurrentShortcuts(value);
+            $ctrl.selectedShortcutPreset = angular.copy(KeyboardShortcutService.getCurrentShortcuts());
+            $rootScope.$broadcast('settings:shortcutsSelected', $ctrl.selectedShortcutPreset);
+          }
+          return JSON.stringify(KeyboardShortcutService.getCurrentShortcuts());
+        };
+
+        $ctrl.currentDesiredInstanceImage = function (value) {
+          if (value !== undefined) {
+            InstanceService.setDesiredImage(value);
+          }
+          return InstanceService.getDesiredImage(value);
+        };
+        $ctrl.currentTerminalFontSize = function (value) {
+          if (value !== undefined) {
+            // set font size
+            TerminalService.setFontSize(value);
+            return;
+          }
+
+          return TerminalService.getFontSize();
+        }
+
+        $ctrl.close = function () {
+          $mdDialog.cancel();
+        }
+      }
+    })
+    .service("SessionService", function ($http) {
+      var templates = [
+        {
+          title: '3 Managers and 2 Workers',
+          icon: '/assets/swarm.png',
+          setup: {
+            instances: [
+              { hostname: 'manager1', is_swarm_manager: true },
+              { hostname: 'manager2', is_swarm_manager: true },
+              { hostname: 'manager3', is_swarm_manager: true },
+              { hostname: 'worker1', is_swarm_worker: true },
+              { hostname: 'worker2', is_swarm_worker: true }
+            ]
+          }
         },
         {
-          name : "Mac OSX",
-          presets : [
-            { description : "Clear terminal", command : "Cmd+K", metaKey : true, keyCode : 75, action : function(context) { context.terminal.clear(); }},
-            { description : "Toggle terminal fullscreen", command : "Alt+enter", altKey : true, keyCode : 13, action : function(context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); }},
-            {
-              description: "Increase Font Size",
-              command: "Cmd++",
-              metaKey : true,
-              keyCode: 187,
-              action: function(context) {
-                TerminalService.increaseFontSize();
-                context.e.preventDefault()
-              }
-            },
-            {
-              description: "Decrease Font Size",
-              command: "Cmd+-",
-              metaKey: true,
-              keyCode: 189,
-              action: function(context) {
-                context.e.preventDefault()
-                TerminalService.decreaseFontSize();
-              }
-            }
-          ]
+          title: '5 Managers and no workers',
+          icon: '/assets/swarm.png',
+          setup: {
+            instances: [
+              { hostname: 'manager1', is_swarm_manager: true },
+              { hostname: 'manager2', is_swarm_manager: true },
+              { hostname: 'manager3', is_swarm_manager: true },
+              { hostname: 'manager4', is_swarm_manager: true },
+              { hostname: 'manager5', is_swarm_manager: true }
+            ]
+          }
+        },
+        {
+          title: '1 Manager and 1 Worker',
+          icon: '/assets/swarm.png',
+          setup: {
+            instances: [
+              { hostname: 'manager1', is_swarm_manager: true },
+              { hostname: 'worker1', is_swarm_worker: true }
+            ]
+          }
         }
-      ]
-    }
+      ];
 
-    function getCurrentShortcuts() {
-      var shortcuts = localStorage.getItem("shortcut-preset-name");
-      if (shortcuts == null) {
-        shortcuts = getDefaultShortcutPrefixName();
-        if (shortcuts == null)
-          return null;
+      return {
+        getAvailableTemplates: getAvailableTemplates,
+        getCurrentSessionId: getCurrentSessionId,
+        setup: setup,
+      };
+
+      function getCurrentSessionId() {
+        return window.location.pathname.replace('/p/', '');
+      }
+      function getAvailableTemplates() {
+        return templates;
+      }
+      function setup(plan, cb) {
+        return $http
+          .post("/sessions/" + getCurrentSessionId() + "/setup", plan)
+          .then(function (response) {
+            if (cb) cb();
+          }, function (response) {
+            if (cb) cb(response.data);
+          });
+      }
+    })
+    .service("InstanceService", function ($http) {
+      var instanceImages = [];
+      _prepopulateAvailableImages();
+
+      return {
+        getAvailableImages: getAvailableImages,
+        setDesiredImage: setDesiredImage,
+        getDesiredImage: getDesiredImage,
+      };
+
+      function getAvailableImages() {
+        return instanceImages;
       }
 
-      var preset = getAvailablePresets()
-      .filter(function(preset) { return preset.name == shortcuts; });
-      if (preset.length == 0)
-        console.error("Unable to find preset with name '" + shortcuts + "'");
-      return preset[0];
-      return (shortcuts == null) ? null : JSON.parse(shortcuts);
-    }
+      function getDesiredImage() {
+        var image = localStorage.getItem("settings.desiredImage");
+        if (image == null)
+          return instanceImages[0];
+        return image;
+      }
 
-    function setCurrentShortcuts(config) {
-      localStorage.setItem("shortcut-preset-name", config.name);
-    }
+      function setDesiredImage(image) {
+        if (image === null)
+          localStorage.removeItem("settings.desiredImage");
+        else
+          localStorage.setItem("settings.desiredImage", image);
+      }
 
-    function getDefaultShortcutPrefixName() {
-      if (window.navigator.platform.toUpperCase().indexOf('MAC') >= 0)
-        return "Mac OSX";
-      return "None";
-    }
-  }])
-  .service('TerminalService', ['$window', '$rootScope', function($window, $rootScope) {
-    var fullscreen;
-    var fontSize = getFontSize();
-    return {
-      getFontSizes : getFontSizes,
-      setFontSize : setFontSize,
-      getFontSize : getFontSize,
-      increaseFontSize : increaseFontSize,
-      decreaseFontSize : decreaseFontSize,
-      toggleFullScreen : toggleFullScreen
-    };
-    function getFontSizes() {
-      var terminalFontSizes = [];
-      for (var i=3; i<40; i++) {
-        terminalFontSizes.push(i+'px');
+      function _prepopulateAvailableImages() {
+        return $http
+          .get("/instances/images")
+          .then(function (response) {
+            instanceImages = response.data;
+          });
       }
-      return terminalFontSizes;
-    };
-    function getFontSize() {
-      if($rootScope.selectedInstance){
-        return $rootScope.selectedInstance.term.getOption("fontSize") + "px"
-      }else{
-        return $(".terminal").css("font-size")
+
+    })
+    .run(function (InstanceService) { /* forcing pre-populating for now */ })
+    .service("KeyboardShortcutService", ['TerminalService', function (TerminalService) {
+      var resizeFunc;
+
+      return {
+        getAvailablePresets: getAvailablePresets,
+        getCurrentShortcuts: getCurrentShortcuts,
+        setCurrentShortcuts: setCurrentShortcuts,
+        setResizeFunc: setResizeFunc
+      };
+
+      function setResizeFunc(f) {
+        resizeFunc = f;
       }
-    }
-    function setFontSize(value) {
-      const { term }= $rootScope.selectedInstance;
-      fontSize = value;
-      var size = parseInt(value);
-      term.setOption("fontSize", size)
-      term.resize(1,1)
-      term.fit()
-    }
-    function increaseFontSize() {
-      var sizes = getFontSizes();
-      var size = getFontSize();
-      var i = sizes.indexOf(size);
-      if (i == -1) {
-        return;
+
+      function getAvailablePresets() {
+        return [
+          {
+            name: "None",
+            presets: [
+              {
+                description: "Toggle terminal fullscreen", command: "Alt+enter", altKey: true, keyCode: 13, action: function (context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); }
+              },
+              {
+                description: "Increase Font Size",
+                command: "Ctrl++",
+                ctrlKey: true,
+                keyCode: 187,
+                action: function (context) {
+                  TerminalService.increaseFontSize();
+                  context.e.preventDefault()
+                }
+              },
+              {
+                description: "Decrease Font Size",
+                command: "Ctrl+-",
+                ctrlKey: true,
+                keyCode: 189,
+                action: function (context) {
+                  context.e.preventDefault()
+                  TerminalService.decreaseFontSize();
+                }
+              }
+            ]
+          },
+          {
+            name: "Mac OSX",
+            presets: [
+              { description: "Clear terminal", command: "Cmd+K", metaKey: true, keyCode: 75, action: function (context) { context.terminal.clear(); } },
+              { description: "Toggle terminal fullscreen", command: "Alt+enter", altKey: true, keyCode: 13, action: function (context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); } },
+              {
+                description: "Increase Font Size",
+                command: "Cmd++",
+                metaKey: true,
+                keyCode: 187,
+                action: function (context) {
+                  TerminalService.increaseFontSize();
+                  context.e.preventDefault()
+                }
+              },
+              {
+                description: "Decrease Font Size",
+                command: "Cmd+-",
+                metaKey: true,
+                keyCode: 189,
+                action: function (context) {
+                  context.e.preventDefault()
+                  TerminalService.decreaseFontSize();
+                }
+              }
+            ]
+          }
+        ]
       }
-      if (i+1 > sizes.length) {
-        return;
+
+      function getCurrentShortcuts() {
+        var shortcuts = localStorage.getItem("shortcut-preset-name");
+        if (shortcuts == null) {
+          shortcuts = getDefaultShortcutPrefixName();
+          if (shortcuts == null)
+            return null;
+        }
+
+        var preset = getAvailablePresets()
+          .filter(function (preset) { return preset.name == shortcuts; });
+        if (preset.length == 0)
+          console.error("Unable to find preset with name '" + shortcuts + "'");
+        return preset[0];
+        return (shortcuts == null) ? null : JSON.parse(shortcuts);
       }
-      setFontSize(sizes[i+1]);
-    }
-    function decreaseFontSize() {
-      var sizes = getFontSizes();
-      var size = getFontSize();
-      var i = sizes.indexOf(size);
-      if (i == -1) {
-        return;
+
+      function setCurrentShortcuts(config) {
+        localStorage.setItem("shortcut-preset-name", config.name);
       }
-      if (i-1 < 0) {
-        return;
+
+      function getDefaultShortcutPrefixName() {
+        if (window.navigator.platform.toUpperCase().indexOf('MAC') >= 0)
+          return "Mac OSX";
+        return "None";
       }
-      setFontSize(sizes[i-1]);
-    }
-    function toggleFullScreen(terminal, resize) {
-      if(fullscreen) {
-        terminal.toggleFullScreen();
-        terminal.containerElement.append(terminal.element)
-        setTimeout(()=>{
-          terminal.resize(1,1);
+    }])
+    .service('TerminalService', ['$window', '$rootScope', function ($window, $rootScope) {
+      var fullscreen;
+      var fontSize = getFontSize();
+      return {
+        getFontSizes: getFontSizes,
+        setFontSize: setFontSize,
+        getFontSize: getFontSize,
+        increaseFontSize: increaseFontSize,
+        decreaseFontSize: decreaseFontSize,
+        toggleFullScreen: toggleFullScreen
+      };
+      function getFontSizes() {
+        var terminalFontSizes = [];
+        for (var i = 3; i < 40; i++) {
+          terminalFontSizes.push(i + 'px');
+        }
+        return terminalFontSizes;
+      };
+      function getFontSize() {
+        if ($rootScope.selectedInstance) {
+          return $rootScope.selectedInstance.term.getOption("fontSize") + "px"
+        } else {
+          return $(".terminal").css("font-size")
+        }
+      }
+      function setFontSize(value) {
+        const { term } = $rootScope.selectedInstance;
+        fontSize = value;
+        var size = parseInt(value);
+        term.setOption("fontSize", size)
+        term.resize(1, 1)
+        term.fit()
+      }
+      function increaseFontSize() {
+        var sizes = getFontSizes();
+        var size = getFontSize();
+        var i = sizes.indexOf(size);
+        if (i == -1) {
+          return;
+        }
+        if (i + 1 > sizes.length) {
+          return;
+        }
+        setFontSize(sizes[i + 1]);
+      }
+      function decreaseFontSize() {
+        var sizes = getFontSizes();
+        var size = getFontSize();
+        var i = sizes.indexOf(size);
+        if (i == -1) {
+          return;
+        }
+        if (i - 1 < 0) {
+          return;
+        }
+        setFontSize(sizes[i - 1]);
+      }
+      function toggleFullScreen(terminal, resize) {
+        if (fullscreen) {
+          terminal.toggleFullScreen();
+          terminal.containerElement.append(terminal.element)
+          setTimeout(() => {
+            terminal.resize(1, 1);
+            terminal.fit();
+            terminal.focus();
+          }, 100)
+          fullscreen = null;
+        } else {
+          // save the current parent
+          terminal.containerElement = $(terminal.element).parent()
+          $("body").append(terminal.element)
+          fullscreen = terminal.proposeGeometry();
+          terminal.toggleFullScreen();
           terminal.fit();
           terminal.focus();
-        },100)
-        fullscreen = null;
-      } else {
-        // save the current parent
-        terminal.containerElement = $(terminal.element).parent()
-        $("body").append(terminal.element)
-        fullscreen = terminal.proposeGeometry();
-        terminal.toggleFullScreen();
-        terminal.fit();
-        terminal.focus();
+        }
       }
-    }
-  }]);
+    }]);
 })();

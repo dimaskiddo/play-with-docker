@@ -42,7 +42,7 @@
             </div>
             <div class="md-toolbar-tools" ng-if="playground.allow_windows_instances">
               <md-switch ng-model="type.windows">
-                Windows Containers - {{windows}}
+                Windows Containers {{windows}}
               </md-switch>
             </div>
           </md-toolbar>
@@ -108,8 +108,8 @@
               <div layout-gt-sm="row">
                 <md-input-container>
                   <label>SSH</label>
-                  <input value="ssh {{instance.proxy_host}}@direct.{{host}}" type="text" readonly="readonly" size="50">
-                  <md-icon ngclipboard data-clipboard-text="ssh {{instance.proxy_host}}@direct.{{host}} "class="material-icons">content_copy
+                  <input value="ssh -i id_rsa {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="50">
+                  <md-icon ngclipboard data-clipboard-text="ssh -i id_rsa {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
                     <md-tooltip md-direction="top">Copy!</md-tooltip>
                   </md-icon>
                 </md-input-container>

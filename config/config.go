@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain,
+	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain, L2SSHPort,
 	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
 	LetsEncryptCertsDir, DataDirHost, DataDirUser, AdminToken, SegmentId string
 )
@@ -70,6 +70,7 @@ func ParseFlags() {
 	flag.StringVar(&L2ContainerName, "l2-name", GetEnvString("PWD_L2_CONTAINER_NAME", "play-with-docker-router"), "L2 Router Container Name")
 	flag.StringVar(&L2RouterIP, "l2-ip", GetEnvString("PWD_L2_ROUTER_IP", ""), "L2 Router IP address for Ping Response")
 	flag.StringVar(&L2Subdomain, "l2-subdomain", GetEnvString("PWD_L2_SUBDOMAIN", "apps"), "L2 Router Subdomain for Ingress")
+	flag.StringVar(&L2SSHPort, "l2-ssh-port", GetEnvString("PWD_L2_SSH_PORT", "2222"), "L2 Router Custom SSH Port")
 
 	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
 	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")

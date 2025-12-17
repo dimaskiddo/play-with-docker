@@ -60,6 +60,8 @@ type PlaygroundConfigurationResponse struct {
 	AllowWindowsInstances       bool          `json:"allow_windows_instances"`
 	DefaultSessionDuration      time.Duration `json:"default_session_duration"`
 	DindVolumeSize              string        `json:"dind_volume_size"`
+	L2Subdomain                 string        `json:"l2_subdomain"`
+	L2SSHPort                   string        `json:"l2_ssh_port"`
 }
 
 func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
@@ -77,6 +79,8 @@ func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
 		AllowWindowsInstances:       playground.AllowWindowsInstances,
 		DefaultSessionDuration:      playground.DefaultSessionDuration,
 		DindVolumeSize:              playground.DindVolumeSize,
+		L2Subdomain:                 config.L2Subdomain,
+		L2SSHPort:                   config.L2SSHPort,
 	})
 }
 

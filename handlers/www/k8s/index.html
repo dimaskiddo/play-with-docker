@@ -41,7 +41,7 @@
             </div>
             <div class="md-toolbar-tools" ng-if="playground.allow_windows_instances">
               <md-switch ng-model="type.windows">
-                Windows Containers - {{windows}}
+                Windows Containers {{windows}}
               </md-switch>
             </div>
           </md-toolbar>
@@ -104,7 +104,7 @@
               <div layout-gt-sm="row">
                 <md-input-container>
                   <label>URL</label>
-                  <input value="{{instance.proxy_host}}.direct.{{host}}" type="text" readonly="readonly" size="50">
+                  <input value="{{instance.proxy_host}}.{{playground.l2_subdomain}}.{{playground.domain}}" type="text" readonly="readonly" size="50">
                 </md-input-container>
                 <div class="md-block" glex-gt-sm></div>
               </div>
