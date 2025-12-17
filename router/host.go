@@ -32,7 +32,13 @@ type HostInfo struct {
 func EncodeHost(sessionId, instanceIP string, opts HostOpts) string {
 	encodedIP := strings.Replace(instanceIP, ".", "-", -1)
 
-	sub := fmt.Sprintf("ip%s-%s", encodedIP, sessionId)
+	// Shorten session ID to first 8 characters
+	shortSessionId := sessionId
+	if len(sessionId) > 8 {
+		shortSessionId = sessionId[:8]
+	}
+
+	sub := fmt.Sprintf("ip%s-%s", encodedIP, shortSessionId)
 	if opts.EncodedPort > 0 {
 		sub = fmt.Sprintf("%s-%d", sub, opts.EncodedPort)
 	}

@@ -16,8 +16,10 @@ func TestSessionPut(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	tmpfile.Close()
 	os.Remove(tmpfile.Name())
+
 	defer os.Remove(tmpfile.Name())
 
 	storage, err := NewFileStorage(tmpfile.Name())
@@ -42,6 +44,7 @@ func TestSessionPut(t *testing.T) {
 		ClientsBySessionId:          map[string][]string{},
 		UsersByProvider:             map[string]string{},
 	}
+
 	var loadedDB *DB
 
 	file, err := os.Open(tmpfile.Name())
@@ -53,7 +56,6 @@ func TestSessionPut(t *testing.T) {
 	err = decoder.Decode(&loadedDB)
 
 	assert.Nil(t, err)
-
 	assert.EqualValues(t, expectedDB, loadedDB)
 }
 
@@ -77,10 +79,13 @@ func TestSessionGet(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
+
 	assert.Nil(t, err)
 	tmpfile.Close()
+
 	defer os.Remove(tmpfile.Name())
 
 	storage, err := NewFileStorage(tmpfile.Name())
@@ -117,9 +122,11 @@ func TestSessionGetAll(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -139,8 +146,10 @@ func TestSessionDelete(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	tmpfile.Close()
 	os.Remove(tmpfile.Name())
+
 	defer os.Remove(tmpfile.Name())
 
 	storage, err := NewFileStorage(tmpfile.Name())
@@ -183,9 +192,11 @@ func TestInstanceGet(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -194,6 +205,7 @@ func TestInstanceGet(t *testing.T) {
 	assert.Nil(t, err)
 
 	foundInstance, err := storage.InstanceGet("i1")
+
 	assert.Nil(t, err)
 	assert.Equal(t, expectedInstance, foundInstance)
 }
@@ -204,6 +216,7 @@ func TestInstancePut(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -254,6 +267,7 @@ func TestInstanceDelete(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -302,9 +316,11 @@ func TestInstanceFindBySessionId(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -339,9 +355,11 @@ func TestWindowsInstanceGetAll(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -361,6 +379,7 @@ func TestWindowsInstancePut(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -411,6 +430,7 @@ func TestWindowsInstanceDelete(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -458,9 +478,11 @@ func TestClientGet(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -479,6 +501,7 @@ func TestClientPut(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -529,6 +552,7 @@ func TestClientDelete(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -577,9 +601,11 @@ func TestClientFindBySessionId(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -613,9 +639,11 @@ func TestPlaygroundGet(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
@@ -634,6 +662,7 @@ func TestPlaygroundPut(t *testing.T) {
 		log.Fatal(err)
 	}
 	tmpfile.Close()
+
 	os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile.Name())
 
@@ -695,9 +724,11 @@ func TestPlaygroundGetAll(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	encoder := json.NewEncoder(tmpfile)
 	err = encoder.Encode(&expectedDB)
 	assert.Nil(t, err)
+
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 

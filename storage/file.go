@@ -16,18 +16,17 @@ type storage struct {
 }
 
 type DB struct {
-	Sessions         map[string]*types.Session         `json:"sessions"`
-	Instances        map[string]*types.Instance        `json:"instances"`
-	Clients          map[string]*types.Client          `json:"clients"`
-	WindowsInstances map[string]*types.WindowsInstance `json:"windows_instances"`
-	LoginRequests    map[string]*types.LoginRequest    `json:"login_requests"`
-	Users            map[string]*types.User            `json:"user"`
-	Playgrounds      map[string]*types.Playground      `json:"playgrounds"`
-
-	WindowsInstancesBySessionId map[string][]string `json:"windows_instances_by_session_id"`
-	InstancesBySessionId        map[string][]string `json:"instances_by_session_id"`
-	ClientsBySessionId          map[string][]string `json:"clients_by_session_id"`
-	UsersByProvider             map[string]string   `json:"users_by_providers"`
+	Sessions                    map[string]*types.Session         `json:"sessions"`
+	Instances                   map[string]*types.Instance        `json:"instances"`
+	Clients                     map[string]*types.Client          `json:"clients"`
+	WindowsInstances            map[string]*types.WindowsInstance `json:"windows_instances"`
+	LoginRequests               map[string]*types.LoginRequest    `json:"login_requests"`
+	Users                       map[string]*types.User            `json:"user"`
+	Playgrounds                 map[string]*types.Playground      `json:"playgrounds"`
+	WindowsInstancesBySessionId map[string][]string               `json:"windows_instances_by_session_id"`
+	InstancesBySessionId        map[string][]string               `json:"instances_by_session_id"`
+	ClientsBySessionId          map[string][]string               `json:"clients_by_session_id"`
+	UsersByProvider             map[string]string                 `json:"users_by_providers"`
 }
 
 func (store *storage) SessionGet(id string) (*types.Session, error) {
@@ -47,6 +46,7 @@ func (store *storage) SessionGetAll() ([]*types.Session, error) {
 	defer store.rw.Unlock()
 
 	sessions := make([]*types.Session, len(store.db.Sessions))
+
 	i := 0
 	for _, s := range store.db.Sessions {
 		sessions[i] = s
@@ -73,17 +73,21 @@ func (store *storage) SessionDelete(id string) error {
 	if !found {
 		return nil
 	}
+
 	for _, i := range store.db.WindowsInstancesBySessionId[id] {
 		delete(store.db.WindowsInstances, i)
 	}
+
 	store.db.WindowsInstancesBySessionId[id] = []string{}
 	for _, i := range store.db.InstancesBySessionId[id] {
 		delete(store.db.Instances, i)
 	}
+
 	store.db.InstancesBySessionId[id] = []string{}
 	for _, i := range store.db.ClientsBySessionId[id] {
 		delete(store.db.Clients, i)
 	}
+
 	store.db.ClientsBySessionId[id] = []string{}
 	delete(store.db.Sessions, id)
 
@@ -105,6 +109,7 @@ func (store *storage) InstanceGet(name string) (*types.Instance, error) {
 	if i == nil {
 		return nil, NotFoundError
 	}
+
 	return i, nil
 }
 
@@ -119,12 +124,14 @@ func (store *storage) InstancePut(instance *types.Instance) error {
 
 	store.db.Instances[instance.Name] = instance
 	found = false
+
 	for _, i := range store.db.InstancesBySessionId[string(instance.SessionId)] {
 		if i == instance.Name {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		store.db.InstancesBySessionId[string(instance.SessionId)] = append(store.db.InstancesBySessionId[string(instance.SessionId)], instance.Name)
 	}
@@ -148,6 +155,7 @@ func (store *storage) InstanceDelete(name string) error {
 			break
 		}
 	}
+
 	store.db.InstancesBySessionId[string(instance.SessionId)] = instances
 	delete(store.db.Instances, name)
 
@@ -167,6 +175,7 @@ func (store *storage) InstanceFindBySessionId(sessionId string) ([]*types.Instan
 
 	instanceIds := store.db.InstancesBySessionId[sessionId]
 	instances := make([]*types.Instance, len(instanceIds))
+
 	for i, id := range instanceIds {
 		instances[i] = store.db.Instances[id]
 	}
@@ -195,14 +204,17 @@ func (store *storage) WindowsInstancePut(instance *types.WindowsInstance) error 
 	if !found {
 		return NotFoundError
 	}
+
 	store.db.WindowsInstances[instance.Id] = instance
 	found = false
+
 	for _, i := range store.db.WindowsInstancesBySessionId[string(instance.SessionId)] {
 		if i == instance.Id {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		store.db.WindowsInstancesBySessionId[string(instance.SessionId)] = append(store.db.WindowsInstancesBySessionId[string(instance.SessionId)], instance.Id)
 	}
@@ -226,6 +238,7 @@ func (store *storage) WindowsInstanceDelete(id string) error {
 			break
 		}
 	}
+
 	store.db.WindowsInstancesBySessionId[string(instance.SessionId)] = instances
 	delete(store.db.WindowsInstances, id)
 
@@ -240,6 +253,7 @@ func (store *storage) ClientGet(id string) (*types.Client, error) {
 	if i == nil {
 		return nil, NotFoundError
 	}
+
 	return i, nil
 }
 func (store *storage) ClientPut(client *types.Client) error {
@@ -253,18 +267,21 @@ func (store *storage) ClientPut(client *types.Client) error {
 
 	store.db.Clients[client.Id] = client
 	found = false
+
 	for _, i := range store.db.ClientsBySessionId[string(client.SessionId)] {
 		if i == client.Id {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		store.db.ClientsBySessionId[string(client.SessionId)] = append(store.db.ClientsBySessionId[string(client.SessionId)], client.Id)
 	}
 
 	return store.save()
 }
+
 func (store *storage) ClientDelete(id string) error {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -281,23 +298,27 @@ func (store *storage) ClientDelete(id string) error {
 			break
 		}
 	}
+
 	store.db.ClientsBySessionId[string(client.SessionId)] = clients
 	delete(store.db.Clients, id)
 
 	return store.save()
 }
+
 func (store *storage) ClientCount() (int, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
 
 	return len(store.db.Clients), nil
 }
+
 func (store *storage) ClientFindBySessionId(sessionId string) ([]*types.Client, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
 
 	clientIds := store.db.ClientsBySessionId[sessionId]
 	clients := make([]*types.Client, len(clientIds))
+
 	for i, id := range clientIds {
 		clients[i] = store.db.Clients[id]
 	}
@@ -310,8 +331,9 @@ func (store *storage) LoginRequestPut(loginRequest *types.LoginRequest) error {
 	defer store.rw.Unlock()
 
 	store.db.LoginRequests[loginRequest.Id] = loginRequest
-	return nil
+	return store.save()
 }
+
 func (store *storage) LoginRequestGet(id string) (*types.LoginRequest, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -322,12 +344,13 @@ func (store *storage) LoginRequestGet(id string) (*types.LoginRequest, error) {
 		return lr, nil
 	}
 }
+
 func (store *storage) LoginRequestDelete(id string) error {
 	store.rw.Lock()
 	defer store.rw.Unlock()
 
 	delete(store.db.LoginRequests, id)
-	return nil
+	return store.save()
 }
 
 func (store *storage) UserFindByProvider(providerName, providerUserId string) (*types.User, error) {
@@ -354,6 +377,7 @@ func (store *storage) UserPut(user *types.User) error {
 
 	return store.save()
 }
+
 func (store *storage) UserGet(id string) (*types.User, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -373,6 +397,7 @@ func (store *storage) PlaygroundPut(playground *types.Playground) error {
 
 	return store.save()
 }
+
 func (store *storage) PlaygroundGet(id string) (*types.Playground, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -412,8 +437,10 @@ func (store *storage) load() error {
 	}
 
 	file.Close()
+
 	return nil
 }
+
 func (store *storage) PlaygroundGetAll() ([]*types.Playground, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -434,8 +461,10 @@ func (store *storage) save() error {
 		return err
 	}
 	defer file.Close()
+
 	encoder := json.NewEncoder(file)
 	err = encoder.Encode(&store.db)
+
 	return err
 }
 
