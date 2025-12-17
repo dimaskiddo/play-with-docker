@@ -406,7 +406,7 @@
       });
     }
 
-    $scope.endSession = function() {
+    $scope.terminateSession = function() {
       $http({
         method: 'POST',
         url: '/sessions/terminate',
