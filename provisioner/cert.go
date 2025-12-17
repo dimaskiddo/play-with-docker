@@ -22,18 +22,16 @@ func newCertificate(org string) (*x509.Certificate, error) {
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+
 	if err != nil {
 		return nil, err
 	}
 
 	return &x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject: pkix.Name{
-			Organization: []string{org},
-		},
-		NotBefore: notBefore,
-		NotAfter:  notAfter,
-
+		SerialNumber:          serialNumber,
+		Subject:               pkix.Name{Organization: []string{org}},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement,
 		BasicConstraintsValid: true,
 	}, nil
@@ -63,6 +61,7 @@ func GenerateCACertificate(org string) ([]byte, []byte, error) {
 
 	cert := new(bytes.Buffer)
 	key := new(bytes.Buffer)
+
 	pem.Encode(cert, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	pem.Encode(key, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 

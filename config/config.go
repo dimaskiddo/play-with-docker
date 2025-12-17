@@ -27,7 +27,7 @@ var (
 var (
 	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain,
 	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
-	LetsEncryptCertsDir, AdminToken, SegmentId string
+	LetsEncryptCertsDir, DataDirHost, DataDirUser, AdminToken, SegmentId string
 )
 
 var (
@@ -93,11 +93,15 @@ func ParseFlags() {
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DINS External Volume Through XFS Volume Driver")
 
+	flag.StringVar(&DataDirUser, "data-dir", GetEnvString("PWD_DATA_DIR", "./data"), "Data Directory Inside Container to Store User Persistent Data")
+
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
 
 	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()
+
+	DataDirHost = GetEnvString("PWD_DATA_DIR_HOST", DataDirUser)
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
 }

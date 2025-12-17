@@ -53,22 +53,27 @@ func (m *Mock) GetPorts() ([]uint16, error) {
 	args := m.Called()
 	return args.Get(0).([]uint16), args.Error(1)
 }
+
 func (m *Mock) ContainerStats(name string) (io.ReadCloser, error) {
 	args := m.Called(name)
 	return args.Get(0).(io.ReadCloser), args.Error(1)
 }
+
 func (m *Mock) ContainerResize(name string, rows, cols uint) error {
 	args := m.Called(name, rows, cols)
 	return args.Error(0)
 }
+
 func (m *Mock) ContainerRename(old, new string) error {
 	args := m.Called(old, new)
 	return args.Error(0)
 }
+
 func (m *Mock) CreateAttachConnection(name string) (net.Conn, error) {
 	args := m.Called(name)
 	return args.Get(0).(net.Conn), args.Error(1)
 }
+
 func (m *Mock) CopyToContainer(containerName, destination, fileName string, content io.Reader) error {
 	args := m.Called(containerName, destination, fileName, content)
 	return args.Error(0)
@@ -78,14 +83,17 @@ func (m *Mock) CopyFromContainer(containerName, filePath string) (io.Reader, err
 	args := m.Called(containerName, filePath)
 	return args.Get(0).(io.Reader), args.Error(1)
 }
+
 func (m *Mock) ContainerDelete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
+
 func (m *Mock) ContainerCreate(opts CreateContainerOpts) error {
 	args := m.Called(opts)
 	return args.Error(0)
 }
+
 func (m *Mock) ContainerIPs(id string) (map[string]string, error) {
 	args := m.Called(id)
 	return args.Get(0).(map[string]string), args.Error(1)
@@ -95,30 +103,37 @@ func (m *Mock) ExecAttach(instanceName string, command []string, out io.Writer) 
 	args := m.Called(instanceName, command, out)
 	return args.Int(0), args.Error(1)
 }
+
 func (m *Mock) NetworkDisconnect(containerId, networkId string) error {
 	args := m.Called(containerId, networkId)
 	return args.Error(0)
 }
+
 func (m *Mock) NetworkDelete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
+
 func (m *Mock) Exec(instanceName string, command []string) (int, error) {
 	args := m.Called(instanceName, command)
 	return args.Int(0), args.Error(1)
 }
+
 func (m *Mock) SwarmInit(advertiseAddr string) (*SwarmTokens, error) {
 	args := m.Called(advertiseAddr)
 	return args.Get(0).(*SwarmTokens), args.Error(1)
 }
+
 func (m *Mock) SwarmJoin(addr, token string) error {
 	args := m.Called(addr, token)
 	return args.Error(0)
 }
+
 func (m *Mock) ConfigCreate(name string, labels map[string]string, data []byte) error {
 	args := m.Called(name, labels, data)
 	return args.Error(0)
 }
+
 func (m *Mock) ConfigDelete(name string) error {
 	args := m.Called(name)
 	return args.Error(0)

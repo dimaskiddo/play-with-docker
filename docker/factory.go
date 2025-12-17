@@ -27,14 +27,17 @@ func NewClient(instance *types.Instance, proxyHost string) (*client.Client, erro
 	var tlsConfig *tls.Config
 	if (len(instance.Cert) > 0 && len(instance.Key) > 0) || instance.Tls {
 		host = router.EncodeHost(instance.SessionId, instance.RoutableIP, router.HostOpts{EncodedPort: 2376})
+
 		tlsConfig = tlsconfig.ClientDefault()
 		tlsConfig.InsecureSkipVerify = true
 		tlsConfig.ServerName = host
+
 		if len(instance.Cert) > 0 && len(instance.Key) > 0 {
 			tlsCert, err := tls.X509KeyPair(instance.Cert, instance.Key)
 			if err != nil {
 				return nil, fmt.Errorf("Could not load X509 key pair: %v. Make sure the key is not encrypted", err)
 			}
+
 			tlsConfig.Certificates = []tls.Certificate{tlsCert}
 		}
 	} else {

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -73,6 +74,20 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 	}
 
 	containerName := fmt.Sprintf("%s_%s", session.Id[:8], d.generator.NewId())
+
+	dockerClient, err := d.factory.GetForSession(session)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get or create user-specific persistent data directory
+	userVolumePath, err := d.getUserVolumePath(session)
+	if err != nil {
+		log.Printf("Error getting user data directory: %v\n", err)
+		// Continue without volume on error
+		userVolumePath = ""
+	}
+
 	opts := docker.CreateContainerOpts{
 		Image:          conf.ImageName,
 		SessionId:      session.Id,
@@ -86,12 +101,9 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		Networks:       networks,
 		DindVolumeSize: conf.DindVolumeSize,
 		Envs:           conf.Envs,
+		UserVolume:     userVolumePath,
 	}
 
-	dockerClient, err := d.factory.GetForSession(session)
-	if err != nil {
-		return nil, err
-	}
 	if err := dockerClient.ContainerCreate(opts); err != nil {
 		return nil, err
 	}
@@ -122,6 +134,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 
 func (d *DinD) getSession(sessionId string) (*types.Session, error) {
 	var session *types.Session
+
 	if s, found := d.cache.Get(sessionId); !found {
 		s, err := d.storage.SessionGet(sessionId)
 		if err != nil {
@@ -132,6 +145,7 @@ func (d *DinD) getSession(sessionId string) (*types.Session, error) {
 	} else {
 		session = s.(*types.Session)
 	}
+
 	return session, nil
 }
 
@@ -140,10 +154,12 @@ func (d *DinD) InstanceDelete(session *types.Session, instance *types.Instance) 
 	if err != nil {
 		return err
 	}
+
 	err = dockerClient.ContainerDelete(instance.Name)
 	if err != nil && !strings.Contains(err.Error(), "No such container") {
 		return err
 	}
+
 	return nil
 }
 
@@ -152,10 +168,12 @@ func (d *DinD) InstanceExec(instance *types.Instance, cmd []string) (int, error)
 	if err != nil {
 		return -1, err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return -1, err
 	}
+
 	return dockerClient.Exec(instance.Name, cmd)
 }
 
@@ -164,10 +182,12 @@ func (d *DinD) InstanceFSTree(instance *types.Instance) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return nil, err
 	}
+
 	b := bytes.NewBuffer([]byte{})
 
 	if c, err := dockerClient.ExecAttach(instance.Name, []string{"bash", "-c", `tree --noreport -J $HOME`}, b); c > 0 {
@@ -185,6 +205,7 @@ func (d *DinD) InstanceFile(instance *types.Instance, filePath string) (io.Reade
 	if err != nil {
 		return nil, err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return nil, err
@@ -198,15 +219,18 @@ func (d *DinD) InstanceResizeTerminal(instance *types.Instance, rows, cols uint)
 	if err != nil {
 		return err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return err
 	}
-	err = dockerClient.ContainerResize(instance.Name, rows, cols)
+
 	// Silently ignore "No such container" errors - container might not be fully started yet
+	err = dockerClient.ContainerResize(instance.Name, rows, cols)
 	if err != nil && strings.Contains(err.Error(), "No such container") {
 		return nil
 	}
+
 	return err
 }
 
@@ -215,34 +239,39 @@ func (d *DinD) InstanceGetTerminal(instance *types.Instance) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return nil, err
 	}
+
 	return dockerClient.CreateAttachConnection(instance.Name)
 }
 
 func (d *DinD) InstanceUploadFromUrl(instance *types.Instance, fileName, dest, url string) error {
 	log.Printf("Downloading file [%s]\n", url)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("Could not download file [%s]. Error: %s\n", url, err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Could not download file [%s]. Status code: %d\n", url, resp.StatusCode)
 	}
+
 	session, err := d.getSession(instance.SessionId)
 	if err != nil {
 		return err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return err
 	}
 
 	copyErr := dockerClient.CopyToContainer(instance.Name, dest, fileName, resp.Body)
-
 	if copyErr != nil {
 		return fmt.Errorf("Error while downloading file [%s]. Error: %s\n", url, copyErr)
 	}
@@ -255,10 +284,12 @@ func (d *DinD) getInstanceCWD(instance *types.Instance) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return "", err
 	}
+
 	b := bytes.NewBufferString("")
 
 	if c, err := dockerClient.ExecAttach(instance.Name, []string{"bash", "-c", `pwdx $(</var/run/cwd)`}, b); c > 0 {
@@ -268,7 +299,6 @@ func (d *DinD) getInstanceCWD(instance *types.Instance) (string, error) {
 	}
 
 	cwd := strings.TrimSpace(strings.Split(b.String(), ":")[1])
-
 	return cwd, nil
 }
 
@@ -277,10 +307,12 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 	if err != nil {
 		return err
 	}
+
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {
 		return err
 	}
+
 	var finalDest string
 	if filepath.IsAbs(dest) {
 		finalDest = dest
@@ -293,10 +325,57 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 	}
 
 	copyErr := dockerClient.CopyToContainer(instance.Name, finalDest, fileName, reader)
-
 	if copyErr != nil {
 		return fmt.Errorf("Error while uploading file [%s]. Error: %s\n", fileName, copyErr)
 	}
 
 	return nil
+}
+
+func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
+	if session.UserId == "" {
+		return "", nil
+	}
+
+	baseDataDir := config.DataDirUser
+	if baseDataDir == "" {
+		baseDataDir = "./data"
+	}
+
+	userDataPath := filepath.Join(baseDataDir, session.UserId)
+	if _, err := os.Stat(userDataPath); os.IsNotExist(err) {
+		log.Printf("Creating persistent data directory %s for user %s\n", userDataPath, session.UserId)
+
+		err = os.MkdirAll(userDataPath, 0755)
+		if err != nil {
+			log.Printf("Error creating data directory %s: %v\n", userDataPath, err)
+			return "", err
+		}
+
+		err = os.Chown(userDataPath, 1000, 1000)
+		if err != nil {
+			log.Printf("Error changing ownership of data directory %s: %v\n", userDataPath, err)
+			return "", err
+		}
+	} else {
+		log.Printf("Reusing existing data directory %s for user %s\n", userDataPath, session.UserId)
+	}
+
+	hostBaseDataDir := config.DataDirHost
+	if hostBaseDataDir == "" {
+		hostBaseDataDir = baseDataDir
+	}
+
+	hostUserDataPath := filepath.Join(hostBaseDataDir, session.UserId)
+	if !filepath.IsAbs(hostUserDataPath) {
+		absPath, err := filepath.Abs(hostUserDataPath)
+		if err != nil {
+			log.Printf("Error getting absolute path for %s: %v\n", hostUserDataPath, err)
+		} else {
+			hostUserDataPath = absPath
+		}
+	}
+
+	log.Printf("Host bind mount path for user %s: %s\n", session.UserId, hostUserDataPath)
+	return hostUserDataPath, nil
 }

@@ -23,6 +23,7 @@ func TestLocalBroker_On(t *testing.T) {
 		receivedArgs = args
 		wg.Done()
 	})
+
 	broker.Emit(SESSION_READY, "1")
 	broker.Emit(INSTANCE_NEW, "2", "foo", "bar")
 
@@ -49,6 +50,7 @@ func TestLocalBroker_OnAny(t *testing.T) {
 		receivedEvent = eventType
 		wg.Done()
 	})
+
 	broker.Emit(SESSION_READY, "1")
 
 	wg.Wait()

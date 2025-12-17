@@ -28,6 +28,7 @@ RUN apk --no-cache --update upgrade \
         ca-certificates \
         openssh-client \
     && mkdir -p \
+        /usr/app/play-with-docker/data \
         /usr/app/play-with-docker/certs \
         /usr/app/play-with-docker/sessions
 

@@ -86,8 +86,10 @@ func (d *docker) ConfigCreate(name string, labels map[string]string, data []byte
 	config.Labels = labels
 	config.Data = data
 	_, err := d.c.ConfigCreate(context.Background(), config)
+
 	return err
 }
+
 func (d *docker) ConfigDelete(name string) error {
 	return d.c.ConfigRemove(context.Background(), name)
 }
@@ -97,7 +99,6 @@ func (d *docker) NetworkCreate(id string, opts types.NetworkCreate) error {
 
 	if err != nil {
 		log.Printf("Starting session err [%s]\n", err)
-
 		return err
 	}
 
@@ -152,6 +153,7 @@ func (d *docker) GetSwarmPorts() ([]string, []uint16, error) {
 	if nodesErr != nil {
 		return nil, nil, nodesErr
 	}
+
 	for _, n := range nodes {
 		nodesIdx[n.ID] = n.Description.Hostname
 		hosts = append(hosts, n.Description.Hostname)
@@ -161,6 +163,7 @@ func (d *docker) GetSwarmPorts() ([]string, []uint16, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
 	for _, service := range services {
 		for _, p := range service.Endpoint.Ports {
 			ports = append(ports, uint16(p.PublishedPort))
@@ -192,7 +195,6 @@ func (d *docker) GetPorts() ([]uint16, error) {
 
 func (d *docker) ContainerStats(name string) (io.ReadCloser, error) {
 	stats, err := d.c.ContainerStats(context.Background(), name, true)
-
 	return stats.Body, err
 }
 
@@ -221,17 +223,22 @@ func (d *docker) CopyToContainer(containerName, destination, fileName string, co
 	if err != nil {
 		return err
 	}
+
 	var buf bytes.Buffer
+
 	t := tar.NewWriter(&buf)
 	if err := t.WriteHeader(&tar.Header{Name: fileName, Mode: 0600, Size: int64(len(contents)), ModTime: time.Now()}); err != nil {
 		return err
 	}
+
 	if _, err := t.Write(contents); err != nil {
 		return err
 	}
+
 	if err := t.Close(); err != nil {
 		return err
 	}
+
 	return d.c.CopyToContainer(context.Background(), containerName, destination, &buf, types.CopyToContainerOptions{AllowOverwriteDirWithFile: true, CopyUIDGID: true})
 }
 
@@ -240,18 +247,21 @@ func (d *docker) CopyFromContainer(containerName, filePath string) (io.Reader, e
 	if err != nil {
 		return nil, err
 	}
+
 	if stat.Mode.IsDir() {
 		return nil, fmt.Errorf("Copying directories is not supported")
 	}
+
 	tr := tar.NewReader(rc)
-	// advance to the only possible file in the tar archive
 	tr.Next()
+
 	return tr, nil
 }
 
 func (d *docker) ContainerDelete(name string) error {
 	err := d.c.ContainerRemove(context.Background(), name, types.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 	d.c.VolumeRemove(context.Background(), name, true)
+
 	return err
 }
 
@@ -383,6 +393,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		if err != nil {
 			return
 		}
+
 		h.Binds = []string{fmt.Sprintf("%s:/var/lib/docker", opts.ContainerName)}
 
 		defer func() {
@@ -458,11 +469,13 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 				log.Printf("Error: Container %s failed to start and cannot be inspected: %v\n", opts.ContainerName, inspectErr)
 				return fmt.Errorf("container failed to start: %v", inspectErr)
 			}
-			log.Printf("Warning: Container %s not running after timeout. Status: %s, Error: %s\n",
-				opts.ContainerName, cinfo.State.Status, cinfo.State.Error)
+
+			log.Printf("Warning: Container %s not running after timeout. Status: %s, Error: %s\n", opts.ContainerName, cinfo.State.Status, cinfo.State.Error)
+
 			if cinfo.State.ExitCode != 0 {
 				log.Printf("Container %s exited with code %d\n", opts.ContainerName, cinfo.State.ExitCode)
 			}
+
 			return fmt.Errorf("container not running after timeout, status: %s", cinfo.State.Status)
 		default:
 			cinfo, inspectErr := d.c.ContainerInspect(context.Background(), container.ID)
@@ -470,16 +483,19 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 				log.Printf("Error inspecting container %s: %v\n", opts.ContainerName, inspectErr)
 				return fmt.Errorf("error inspecting container: %v", inspectErr)
 			}
+
 			if cinfo.State.Running {
 				log.Printf("Container %s is now running\n", opts.ContainerName)
 				return nil
 			}
+
 			// Check if container exited/crashed
 			if cinfo.State.Status == "exited" || cinfo.State.Status == "dead" {
 				log.Printf("Container %s failed to start. Status: %s, ExitCode: %d, Error: %s\n",
 					opts.ContainerName, cinfo.State.Status, cinfo.State.ExitCode, cinfo.State.Error)
 				return fmt.Errorf("container exited immediately: %s", cinfo.State.Error)
 			}
+
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
@@ -495,8 +511,8 @@ func (d *docker) ContainerIPs(id string) (map[string]string, error) {
 	for networkId, conf := range cinfo.NetworkSettings.Networks {
 		ips[networkId] = conf.IPAddress
 	}
-	return ips, nil
 
+	return ips, nil
 }
 
 func (d *docker) pullImage(ctx context.Context, image string) error {
@@ -520,6 +536,7 @@ func (d *docker) copyIfSet(content []byte, fileName, path, containerName string)
 	if len(content) > 0 {
 		return d.CopyToContainer(containerName, path, fileName, bytes.NewReader(content))
 	}
+
 	return nil
 }
 
@@ -528,26 +545,32 @@ func (d *docker) ExecAttach(instanceName string, command []string, out io.Writer
 	if err != nil {
 		return 0, err
 	}
+
 	resp, err := d.c.ContainerExecAttach(context.Background(), e.ID, types.ExecStartCheck{
 		Tty: true,
 	})
+
 	if err != nil {
 		return 0, err
 	}
+
 	io.Copy(out, resp.Reader)
+
 	var ins types.ContainerExecInspect
 	for _ = range time.Tick(1 * time.Second) {
 		ins, err = d.c.ContainerExecInspect(context.Background(), e.ID)
 		if ins.Running {
 			continue
 		}
+
 		if err != nil {
 			return 0, err
 		}
+
 		break
 	}
-	return ins.ExitCode, nil
 
+	return ins.ExitCode, nil
 }
 
 func (d *docker) Exec(instanceName string, command []string) (int, error) {
@@ -555,30 +578,33 @@ func (d *docker) Exec(instanceName string, command []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	err = d.c.ContainerExecStart(context.Background(), e.ID, types.ExecStartCheck{})
 	if err != nil {
 		return 0, err
 	}
+
 	var ins types.ContainerExecInspect
 	for _ = range time.Tick(1 * time.Second) {
 		ins, err = d.c.ContainerExecInspect(context.Background(), e.ID)
 		if ins.Running {
 			continue
 		}
+
 		if err != nil {
 			return 0, err
 		}
+
 		break
 	}
+
 	return ins.ExitCode, nil
 }
 
 func (d *docker) NetworkDisconnect(containerId, networkId string) error {
 	err := d.c.NetworkDisconnect(context.Background(), networkId, containerId, true)
-
 	if err != nil {
 		log.Printf("Disconnection of container from network err [%s]\n", err)
-
 		return err
 	}
 
@@ -587,7 +613,6 @@ func (d *docker) NetworkDisconnect(containerId, networkId string) error {
 
 func (d *docker) NetworkDelete(id string) error {
 	err := d.c.NetworkRemove(context.Background(), id)
-
 	if err != nil {
 		return err
 	}
@@ -613,6 +638,7 @@ func (d *docker) SwarmInit(advertiseAddr string) (*SwarmTokens, error) {
 		Manager: swarmInfo.JoinTokens.Manager,
 	}, nil
 }
+
 func (d *docker) SwarmJoin(addr, token string) error {
 	req := swarm.JoinRequest{RemoteAddrs: []string{addr}, JoinToken: token, ListenAddr: "0.0.0.0:2377", AdvertiseAddr: "eth0"}
 	return d.c.SwarmJoin(context.Background(), req)

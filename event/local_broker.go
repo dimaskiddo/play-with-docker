@@ -20,6 +20,7 @@ func (b *localBroker) On(name EventType, handler Handler) {
 	if b.handlers[name] == nil {
 		b.handlers[name] = []Handler{}
 	}
+
 	b.handlers[name] = append(b.handlers[name], handler)
 }
 
@@ -38,6 +39,7 @@ func (b *localBroker) Emit(name EventType, sessionId string, args ...interface{}
 		for _, handler := range b.anyHandlers {
 			handler(name, sessionId, args...)
 		}
+
 		if b.handlers[name] != nil {
 			for _, handler := range b.handlers[name] {
 				handler(sessionId, args...)

@@ -67,6 +67,7 @@ func (d *windows) InstanceNew(session *types.Session, conf types.InstanceConfig)
 		d.releaseInstance(winfo.id)
 		return nil, err
 	}
+
 	if err = dockerClient.ConfigCreate(instanceName, labels, []byte(instanceName)); err != nil {
 		d.releaseInstance(winfo.id)
 		return nil, err
@@ -90,7 +91,6 @@ func (d *windows) InstanceNew(session *types.Session, conf types.InstanceConfig)
 	instance.SessionHost = session.Host
 
 	return instance, nil
-
 }
 
 func (d *windows) InstanceDelete(session *types.Session, instance *types.Instance) error {
@@ -138,20 +138,25 @@ func (d *windows) InstanceExec(instance *types.Instance, cmd []string) (int, err
 	if err != nil {
 		return -1, err
 	}
+
 	resp, err := http.Post(fmt.Sprintf("http://%s:222/exec", instance.IP), "application/json", bytes.NewReader(b))
 	if err != nil {
 		log.Println(err)
 		return -1, err
 	}
+
 	if resp.StatusCode != 200 {
 		log.Printf("Error exec on instance %s. Got %d\n", instance.Name, resp.StatusCode)
 		return -1, fmt.Errorf("Error exec on instance %s. Got %d\n", instance.Name, resp.StatusCode)
 	}
+
 	var ex execRes
+
 	err = json.NewDecoder(resp.Body).Decode(&ex)
 	if err != nil {
 		return -1, err
 	}
+
 	return ex.ExitCode, nil
 }
 
@@ -174,10 +179,12 @@ func (d *windows) InstanceResizeTerminal(instance *types.Instance, rows, cols ui
 		// Don't log errors for instances that might not be ready yet
 		return nil
 	}
+
 	if resp.StatusCode != 200 {
 		// Don't log errors for instances that might not be ready yet
 		return nil
 	}
+
 	return nil
 }
 
@@ -187,33 +194,41 @@ func (d *windows) InstanceGetTerminal(instance *types.Instance) (net.Conn, error
 		log.Printf("Error creating terminal for instance %s. Got %v\n", instance.Name, err)
 		return nil, err
 	}
+
 	if resp.StatusCode != 200 {
 		log.Printf("Error creating terminal for instance %s. Got %d\n", instance.Name, resp.StatusCode)
 		return nil, fmt.Errorf("Creating terminal got %d\n", resp.StatusCode)
 	}
+
 	url := fmt.Sprintf("ws://%s:222/terminals/1", instance.IP)
 	ws, err := websocket.Dial(url, "", url)
+
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+
 	return ws, nil
 }
 
 func (d *windows) InstanceUploadFromUrl(instance *types.Instance, fileName, dest, u string) error {
 	log.Printf("Downloading file [%s]\n", u)
+
 	resp, err := http.Get(u)
 	if err != nil {
 		return fmt.Errorf("Could not download file [%s]. Error: %s\n", u, err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Could not download file [%s]. Status code: %d\n", u, resp.StatusCode)
 	}
+
 	uploadResp, err := http.Post(fmt.Sprintf("http://%s:222/terminals/1/uploads?dest=%s&file_name=%s", instance.IP, url.QueryEscape(dest), url.QueryEscape(fileName)), "", resp.Body)
 	if err != nil {
 		return err
 	}
+
 	if uploadResp.StatusCode != 200 {
 		return fmt.Errorf("Could not upload file [%s]. Status code: %d\n", fileName, uploadResp.StatusCode)
 	}
@@ -226,6 +241,7 @@ func (d *windows) InstanceUploadFromReader(instance *types.Instance, fileName, d
 	if err != nil {
 		return err
 	}
+
 	if uploadResp.StatusCode != 200 {
 		return fmt.Errorf("Could not upload file [%s]. Status code: %d\n", fileName, uploadResp.StatusCode)
 	}
@@ -234,10 +250,10 @@ func (d *windows) InstanceUploadFromReader(instance *types.Instance, fileName, d
 }
 
 func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error) {
-
 	input := &autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{aws.String("pwd-windows")},
 	}
+
 	out, err := asgService.DescribeAutoScalingGroups(input)
 
 	if err != nil {
@@ -259,6 +275,7 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 
 	assignedInstances, err := d.storage.WindowsInstanceGetAll()
 	assignedInstancesIds := []string{}
+
 	for _, ai := range assignedInstances {
 		assignedInstancesIds = append(assignedInstancesIds, ai.Id)
 	}
@@ -276,6 +293,7 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 	iout, err := ec2Service.DescribeInstances(&ec2.DescribeInstancesInput{
 		InstanceIds: []*string{aws.String(avInstanceId)},
 	})
+
 	if err != nil {
 		// TODO Eetry x times and free the instance that was picked?
 		d.releaseInstance(avInstanceId)
@@ -291,7 +309,6 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 	}
 
 	// TODO Check for free instance, ASG capacity and return
-
 	return instanceInfo, nil
 }
 
@@ -315,6 +332,7 @@ func (d *windows) pickFreeInstance(sessionId string, availInstances, assignedIns
 			return av
 		}
 	}
+
 	// all availalbe instances are assigned
 	return ""
 }

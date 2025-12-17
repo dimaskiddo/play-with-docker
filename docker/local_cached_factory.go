@@ -41,12 +41,15 @@ func (f *localCachedFactory) GetForSession(session *types.Session) (DockerApi, e
 	if err != nil {
 		return nil, err
 	}
+
 	err = f.check(c)
 	if err != nil {
 		return nil, err
 	}
+
 	d := NewDocker(c)
 	f.sessionClient = d
+
 	return f.sessionClient, nil
 }
 
@@ -59,6 +62,7 @@ func (f *localCachedFactory) GetForInstance(instance *types.Instance) (DockerApi
 		c := &instanceEntry{}
 		f.instanceClients[key] = c
 	}
+
 	c = f.instanceClients[key]
 	f.irw.Unlock()
 
@@ -77,10 +81,12 @@ func (f *localCachedFactory) GetForInstance(instance *types.Instance) (DockerApi
 	if err != nil {
 		return nil, err
 	}
+
 	err = f.check(dc)
 	if err != nil {
 		return nil, err
 	}
+
 	dockerClient := NewDocker(dc)
 	c.client = dockerClient
 
@@ -96,12 +102,15 @@ func (f *localCachedFactory) check(c *client.Client) error {
 			time.Sleep(time.Second)
 			continue
 		}
+
 		ok = true
 		break
 	}
+
 	if !ok {
 		return fmt.Errorf("Connection to docker daemon was not established.")
 	}
+
 	return nil
 }
 

@@ -34,10 +34,10 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 	if len(config.Providers[playground.Id]) > 0 {
 		cookie, err := ReadCookie(req)
 		if err != nil {
-			// User it not a human
 			rw.WriteHeader(http.StatusForbidden)
 			return
 		}
+
 		userId = cookie.Id
 	}
 
@@ -57,7 +57,6 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
-
 	}
 
 	var duration time.Duration
@@ -67,11 +66,13 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
 		if d > playground.DefaultSessionDuration {
 			log.Printf("Specified session duration was %s but maximum allowed by this playground is %s\n", d.String(), playground.DefaultSessionDuration.String())
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
 		duration = d
 	} else {
 		duration = playground.DefaultSessionDuration
@@ -84,12 +85,33 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 			http.Redirect(rw, req, "/ooc", http.StatusFound)
 			return
 		}
+
 		log.Printf("%#v \n", err)
 		http.Redirect(rw, req, "/500", http.StatusInternalServerError)
+
 		return
-		//TODO: Return some error code
 	} else {
+		// Automatically create a default instance if no stack was specified
+		if stack == "" {
+			log.Printf("Creating default instance for session %s\n", s.Id)
+
+			instanceConfig := types.InstanceConfig{
+				ImageName:      imageName,
+				PlaygroundFQDN: req.Host,
+				Privileged:     true,
+				DindVolumeSize: "5G",
+			}
+
+			_, err := core.InstanceNew(s, instanceConfig)
+			if err != nil {
+				log.Printf("Error creating default instance for session %s: %v\n", s.Id, err)
+			} else {
+				log.Printf("Successfully created default instance for session %s\n", s.Id)
+			}
+		}
+
 		hostname := req.Host
+
 		// If request is not a form, return sessionId in the body
 		if req.Header.Get("X-Requested-With") == "XMLHttpRequest" {
 			resp := NewSessionResponse{SessionId: s.Id, Hostname: hostname}
@@ -104,13 +126,13 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 
 func formatStack(stack string) string {
 	if !strings.HasSuffix(stack, ".yml") {
-		// If it doesn't end with ".yml", assume it hasn't been specified, then default to "stack.yml"
 		stack = path.Join(stack, "stack.yml")
 	}
+
 	if strings.HasPrefix(stack, "/") {
-		// The host is anonymous, then use our own stack repo.
 		stack = fmt.Sprintf("%s%s", "https://raw.githubusercontent.com/play-with-docker/stacks/master", stack)
 	}
+
 	return stack
 }
 
