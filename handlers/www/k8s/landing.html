@@ -43,6 +43,7 @@
         <form id="landingForm" method="POST" action="/">
           <p ng-show="loggedIn">
             <a class="btn btn-lg btn-success" href="#" ng-click="start()" role="button">Start</a>
+            <a class="btn btn-lg btn-warning" href="#" ng-click="terminate()" role="button">Terminate Session</a>
           </p>
           <input id="stack" type="hidden" name="stack" value="" />
           <input id="stack_name" type="hidden" name="stack_name" value="" />
@@ -70,101 +71,119 @@
     <script type="text/javascript" charset="utf-8" crossorigin="anonymous" src="https://unpkg.com/popper.js@1.11.0/dist/umd/popper.min.js"></script>
     <script type="text/javascript" charset="utf-8" crossorigin="anonymous" src="https://unpkg.com/bootstrap@4.0.0-beta/dist/js/bootstrap.min.js"></script>
     <script type="text/javascript" charset="utf-8">
-      angular.module("PWDLanding", []).controller("LoginController", [
-        "$scope",
-        "$http",
-        "$window",
-        function ($scope, $http, $window) {
-          $scope.providers = [];
-          $scope.loggedIn = false;
-          $scope.user = null;
+      angular.module("PWDLanding", [])
+      .controller("LoginController", ["$scope","$http","$window", function ($scope, $http, $window) {
+        $scope.providers = [];
+        $scope.loggedIn = false;
+        $scope.user = null;
 
-          function checkLoggedIn() {
-            $http({
-              method: "GET",
-              url: "/users/me",
-            }).then(
-              function (response) {
-                $scope.user = response.data;
-                $scope.loggedIn = true;
-              },
-              function (response) {
-                $scope.user = null;
-                $scope.loggedIn = false;
-              },
-            );
-          }
-          checkLoggedIn();
+        function checkLoggedIn() {
           $http({
             method: "GET",
-            url: "/oauth/providers",
+            url: "/users/me",
           }).then(
             function (response) {
-              $scope.providers = response.data;
-              if ($scope.providers.length == 0) {
-                $scope.loggedIn = true;
-              }
+              $scope.user = response.data;
+              $scope.loggedIn = true;
             },
             function (response) {
-              console.log("ERROR", response);
+              $scope.user = null;
+              $scope.loggedIn = false;
             },
           );
+        }
 
-          $scope.login = function (provider) {
-            var width = screen.width * 0.6;
-            var height = 620;
-            var x = screen.width / 2 - width / 2;
-            var y = screen.height / 2 - height / 2;
-            $window.open(
-              "/oauth/providers/" + provider + "/login",
-              "PWDLogin",
-              "width=" + width + ",height=" + height + ",left=" + x + ",top=" + y,
-            );
-            var eventMethod = window.addEventListener
-              ? "addEventListener"
-              : "attachEvent";
-            var eventer = window[eventMethod];
-            var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
-            eventer(
-              messageEvent,
-              function (e) {
-                if (e.data === "done") {
-                  checkLoggedIn();
-                }
-              },
-              false,
-            );
-          };
+        checkLoggedIn();
 
-          $scope.start = function () {
-            function getParameterByName(name, url) {
-              if (!url) url = window.location.href;
-              name = name.replace(/[\[\]]/g, "\\$&");
-              var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-              results = regex.exec(url);
-              if (!results) return null;
-              if (!results[2]) return "";
-              return decodeURIComponent(results[2].replace(/\+/g, " "));
+        $http({
+          method: "GET",
+          url: "/oauth/providers",
+        }).then(
+          function (response) {
+            $scope.providers = response.data;
+            if ($scope.providers.length == 0) {
+              $scope.loggedIn = true;
             }
+          },
+          function (response) {
+            console.log("ERROR", response);
+          },
+        );
 
-            var stack = getParameterByName("stack");
-            if (stack) {
-              document.getElementById("stack").value = stack;
-            }
+        $scope.login = function (provider) {
+          var width = screen.width * 0.6;
+          var height = 620;
 
-            var stackName = getParameterByName("stack_name");
-            if (stackName) {
-              document.getElementById("stack_name").value = stackName;
-            }
+          var x = screen.width / 2 - width / 2;
+          var y = screen.height / 2 - height / 2;
 
-            var imageName = getParameterByName("image_name");
-            if (imageName) {
-              document.getElementById("image_name").value = imageName;
+          $window.open('/oauth/providers/' + provider + '/login', 'Play With Docker - Login', 'width=' + width + ',height=' + height + ',left=' + x + ',top=' + y);
+
+          var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+          var eventer = window[eventMethod];
+          var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+          eventer(messageEvent, function (e) {
+            if (e.data === "done") {
+              checkLoggedIn();
             }
-            document.getElementById("landingForm").submit();
-          };
-        },
-      ]);
+          }, false);
+        }
+
+        $scope.start = function () {
+          function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+
+            if (!results) return null;
+            if (!results[2]) return "";
+
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+          }
+
+          var stack = getParameterByName("stack");
+          if (stack) {
+            document.getElementById("stack").value = stack;
+          }
+
+          var stackName = getParameterByName("stack_name");
+          if (stackName) {
+            document.getElementById("stack_name").value = stackName;
+          }
+
+          var imageName = getParameterByName("image_name");
+          if (imageName) {
+            document.getElementById("image_name").value = imageName;
+          }
+
+          document.getElementById("landingForm").submit();
+        }
+
+        $scope.terminate = function() {
+          $http({
+            method: 'POST',
+            url: '/sessions/terminate',
+            withCredentials: true
+          }).then(function(response) {
+            $scope.user = null;
+            $scope.loggedIn = false;
+
+            setTimeout(function() {
+                window.location.reload();
+            }, 250);
+          }, function(error) {
+            $scope.user = null;
+            $scope.loggedIn = false;
+
+            setTimeout(function() {
+                window.location.reload();
+            }, 250);
+          });
+        }
+      }]);
     </script>
   </body>
 </html>
