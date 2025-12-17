@@ -40,7 +40,7 @@ to create a new session, followed by "ADD NEW INSTANCE" to launch a new terminal
 Notes:
 
 * There is a hard-coded limit of 5 Docker playgrounds per session. After 4 hours sessions are deleted.
-* If you want to override the DIND version or image then set the environmental variable `PWD_DIND_IMAGE=franela/dind:latest` [franela](https://hub.docker.com/r/franela/).
+* If you want to override the DIND version or image then set the environmental variable `PWD_DEFAULT_DIND_IMAGE=franela/dind:latest` [franela](https://hub.docker.com/r/franela/).
 
 ### Port Forwarding
 

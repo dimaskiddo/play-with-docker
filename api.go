@@ -52,11 +52,10 @@ func main() {
 		log.Fatalf("Cannot parse duration Got: %v", err)
 	}
 
-	dindImage := config.GetEnvString("PWD_DIND_IMAGE", "franela/dind:latest")
 	playground := types.Playground{
 		Domain:                      config.PlaygroundDomain,
-		DefaultDinDInstanceImage:    dindImage,
-		AvailableDinDInstanceImages: []string{dindImage},
+		DefaultDinDInstanceImage:    config.DefaultDINDImage,
+		AvailableDinDInstanceImages: []string{config.DefaultDINDImage},
 		AllowWindowsInstances:       config.NoWindows,
 		DefaultSessionDuration:      d,
 		Extras:                      map[string]interface{}{"LoginRedirect": "http://localhost:3000"},

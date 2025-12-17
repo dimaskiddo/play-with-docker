@@ -35,6 +35,7 @@ var (
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
 	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
+	DefaultDINDImage                                                string
 	DefaultLimitCPUCore, MaxLoadAvg                                 float64
 	DefaultLimitMemory                                              int64
 	SecureCookie                                                    *securecookie.SecureCookie
@@ -74,6 +75,8 @@ func ParseFlags() {
 
 	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
 	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
+
+	flag.StringVar(&DefaultDINDImage, "default-dind-image", GetEnvString("PWD_DEFAULT_DIND_IMAGE", "franela/dind:latest"), "Default Docker-in-Docker Image")
 
 	flag.Float64Var(&DefaultLimitCPUCore, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
 	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 2048), "Default Resource Limit for Memory")
