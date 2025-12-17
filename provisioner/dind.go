@@ -202,7 +202,12 @@ func (d *DinD) InstanceResizeTerminal(instance *types.Instance, rows, cols uint)
 	if err != nil {
 		return err
 	}
-	return dockerClient.ContainerResize(instance.Name, rows, cols)
+	err = dockerClient.ContainerResize(instance.Name, rows, cols)
+	// Silently ignore "No such container" errors - container might not be fully started yet
+	if err != nil && strings.Contains(err.Error(), "No such container") {
+		return nil
+	}
+	return err
 }
 
 func (d *DinD) InstanceGetTerminal(instance *types.Instance) (net.Conn, error) {

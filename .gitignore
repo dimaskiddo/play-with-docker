@@ -2,6 +2,7 @@ dist
 vendor
 node_modules
 play-with-docker
+play-with-docker-router
 .env
 *.DS_Store
 !*.gitkeep

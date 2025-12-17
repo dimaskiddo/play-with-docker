@@ -29,8 +29,8 @@ var ec2Service *ec2.EC2
 func init() {
 	// Create a session to share configuration, and load external configuration.
 	sess := session.Must(session.NewSession())
-	//
-	// // Create the service's client with the session.
+
+	// Create the service's client with the session.
 	asgService = autoscaling.New(sess)
 	ec2Service = ec2.New(sess)
 }
@@ -109,7 +109,7 @@ func (d *windows) InstanceDelete(session *types.Session, instance *types.Instanc
 		return err
 	}
 
-	//return error and don't do anything else
+	// return error and don't do anything else
 	if _, err := ec2Service.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{aws.String(instance.WindowsId)}}); err != nil {
 		return err
 	}
@@ -156,11 +156,11 @@ func (d *windows) InstanceExec(instance *types.Instance, cmd []string) (int, err
 }
 
 func (d *windows) InstanceFSTree(instance *types.Instance) (io.Reader, error) {
-	//TODO implement
+	// TODO Implement
 	return nil, nil
 }
 func (d *windows) InstanceFile(instance *types.Instance, filePath string) (io.Reader, error) {
-	//TODO implement
+	// TODO Implement
 	return nil, nil
 }
 
@@ -171,12 +171,12 @@ func (d *windows) releaseInstance(instanceId string) error {
 func (d *windows) InstanceResizeTerminal(instance *types.Instance, rows, cols uint) error {
 	resp, err := http.Post(fmt.Sprintf("http://%s:222/terminals/1/size?cols=%d&rows=%d", instance.IP, cols, rows), "application/json", nil)
 	if err != nil {
-		log.Println(err)
-		return err
+		// Don't log errors for instances that might not be ready yet
+		return nil
 	}
 	if resp.StatusCode != 200 {
-		log.Printf("Error resizing terminal of instance %s. Got %d\n", instance.Name, resp.StatusCode)
-		return fmt.Errorf("Error resizing terminal got %d\n", resp.StatusCode)
+		// Don't log errors for instances that might not be ready yet
+		return nil
 	}
 	return nil
 }
@@ -277,7 +277,7 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 		InstanceIds: []*string{aws.String(avInstanceId)},
 	})
 	if err != nil {
-		// TODO retry x times and free the instance that was picked?
+		// TODO Eetry x times and free the instance that was picked?
 		d.releaseInstance(avInstanceId)
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 		id:        avInstanceId,
 	}
 
-	//TODO check for free instance, ASG capacity and return
+	// TODO Check for free instance, ASG capacity and return
 
 	return instanceInfo, nil
 }
@@ -310,7 +310,7 @@ func (d *windows) pickFreeInstance(sessionId string, availInstances, assignedIns
 		if !found {
 			err := d.storage.WindowsInstancePut(&types.WindowsInstance{SessionId: sessionId, Id: av})
 			if err != nil {
-				// TODO either storage error or instance is already assigned (race condition)
+				// TODO Either storage error or instance is already assigned (race condition)
 			}
 			return av
 		}

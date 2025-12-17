@@ -367,20 +367,20 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 
 	if err != nil {
 		//if client.IsErrImageNotFound(err) {
-		//log.Printf("Unable to find image '%s' locally\n", opts.Image)
-		//if err = d.pullImage(context.Background(), opts.Image); err != nil {
-		//return "", err
-		//}
-		//container, err = d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
-		//if err != nil {
-		//return "", err
-		//}
+		//  log.Printf("Unable to find image '%s' locally\n", opts.Image)
+		//  if err = d.pullImage(context.Background(), opts.Image); err != nil {
+		//    return "", err
+		//  }
+		//  container, err = d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
+		//  if err != nil {
+		//    return "", err
+		//  }
 		//} else {
 		return err
 		//}
 	}
 
-	//connect remaining networks if there are any
+	// connect remaining networks if there are any
 	if len(opts.Networks) > 1 {
 		for _, nid := range opts.Networks {
 			err = d.c.NetworkConnect(context.Background(), nid, container.ID, &network.EndpointSettings{})
@@ -402,10 +402,49 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 
 	err = d.c.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{})
 	if err != nil {
+		log.Printf("Error starting container %s: %v\n", opts.ContainerName, err)
 		return
 	}
 
-	return
+	// Wait for container to be running before returning
+	// This prevents race conditions with terminal resize operations
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Timeout - let's check what happened to the container
+			cinfo, inspectErr := d.c.ContainerInspect(context.Background(), container.ID)
+			if inspectErr != nil {
+				log.Printf("Error: Container %s failed to start and cannot be inspected: %v\n", opts.ContainerName, inspectErr)
+				return fmt.Errorf("container failed to start: %v", inspectErr)
+			}
+			log.Printf("Warning: Container %s not running after timeout. Status: %s, Error: %s\n",
+				opts.ContainerName, cinfo.State.Status, cinfo.State.Error)
+			if cinfo.State.ExitCode != 0 {
+				log.Printf("Container %s exited with code %d\n", opts.ContainerName, cinfo.State.ExitCode)
+			}
+			return fmt.Errorf("container not running after timeout, status: %s", cinfo.State.Status)
+		default:
+			cinfo, inspectErr := d.c.ContainerInspect(context.Background(), container.ID)
+			if inspectErr != nil {
+				log.Printf("Error inspecting container %s: %v\n", opts.ContainerName, inspectErr)
+				return fmt.Errorf("error inspecting container: %v", inspectErr)
+			}
+			if cinfo.State.Running {
+				log.Printf("Container %s is now running\n", opts.ContainerName)
+				return nil
+			}
+			// Check if container exited/crashed
+			if cinfo.State.Status == "exited" || cinfo.State.Status == "dead" {
+				log.Printf("Container %s failed to start. Status: %s, ExitCode: %d, Error: %s\n",
+					opts.ContainerName, cinfo.State.Status, cinfo.State.ExitCode, cinfo.State.Error)
+				return fmt.Errorf("container exited immediately: %s", cinfo.State.Error)
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 }
 
 func (d *docker) ContainerIPs(id string) (map[string]string, error) {

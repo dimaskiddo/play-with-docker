@@ -23,10 +23,8 @@ build:
 	make vendor
 	CGO_ENABLED=$(BUILD_CGO_ENABLED) go build -ldflags="-s -w" -a -installsuffix nocgo -o $(SERVICE_NAME) .
 	echo "Build '$(SERVICE_NAME)' complete."
-	cd router/l2
-	CGO_ENABLED=$(BUILD_CGO_ENABLED) go build -ldflags="-s -w" -a -installsuffix nocgo -o ../../$(SERVICE_NAME)-router .
+	CGO_ENABLED=$(BUILD_CGO_ENABLED) go build -ldflags="-s -w" -a -installsuffix nocgo -o $(SERVICE_NAME)-router ./router/l2
 	echo "Build '$(SERVICE_NAME)-router' complete."
-	cd ../..
 
 run:
 	make vendor
