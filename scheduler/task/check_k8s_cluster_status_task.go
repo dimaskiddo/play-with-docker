@@ -2,7 +2,7 @@ package task
 
 import (
 	"context"
-	"log"
+	"strings"
 
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/k8s"
@@ -29,13 +29,19 @@ func (c *checkK8sClusterStatusTask) Name() string {
 }
 
 func (c checkK8sClusterStatusTask) Run(ctx context.Context, i *types.Instance) error {
+	// Skip if this is not a Kubernetes instance (e.g., regular Docker Swarm)
+	// We identify this by checking if the image contains "k8s" or if the kubelet is available
+	if !strings.Contains(strings.ToLower(i.Image), "k8s") && !strings.Contains(strings.ToLower(i.Image), "kubernetes") {
+		// This is likely a Docker Swarm instance, skip kubernetes checks
+		return nil
+	}
+
 	status := ClusterStatus{Instance: i.Name}
 
 	kc, err := c.factory.GetKubeletForInstance(i)
 	if err != nil {
-		log.Println(err)
-		c.event.Emit(CheckSwarmStatusEvent, i.SessionId, status)
-		return err
+		// If kubelet is not available, this is not a k8s instance, skip silently
+		return nil
 	}
 
 	if isManager, err := kc.IsManager(); err != nil {

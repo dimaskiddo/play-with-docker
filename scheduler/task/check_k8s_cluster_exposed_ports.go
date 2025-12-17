@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/k8s"
@@ -30,9 +31,16 @@ func NewCheckK8sClusterExposedPorts(e event.EventApi, f k8s.FactoryApi) *checkK8
 }
 
 func (c checkK8sClusterExposedPortsTask) Run(ctx context.Context, i *types.Instance) error {
+	// Skip if this is not a Kubernetes instance (e.g., regular Docker Swarm)
+	// We identify this by checking if the image contains "k8s" or if the kubelet is available
+	if !strings.Contains(strings.ToLower(i.Image), "k8s") && !strings.Contains(strings.ToLower(i.Image), "kubernetes") {
+		return nil
+	}
+
 	kc, err := c.factory.GetKubeletForInstance(i)
 	if err != nil {
-		return err
+		// If kubelet is not available, this is not a k8s instance, skip silently
+		return nil
 	}
 
 	if isManager, err := kc.IsManager(); err != nil {
