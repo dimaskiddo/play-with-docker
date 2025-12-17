@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"path"
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
@@ -68,15 +67,14 @@ func Register(extend HandlerExtender) {
 	r := mux.NewRouter()
 	corsRouter := mux.NewRouter()
 
-	corsHandler := gh.CORS(gh.AllowCredentials(), gh.AllowedHeaders([]string{"x-requested-with", "content-type"}), gh.AllowedMethods([]string{"GET", "POST", "HEAD", "DELETE"}), gh.AllowedOriginValidator(func(origin string) bool {
-		if strings.HasSuffix(origin, ".play-with-docker.com") ||
-			strings.HasSuffix(origin, ".play-with-kubernetes.com") ||
-			strings.HasSuffix(origin, ".docker.com") ||
-			strings.HasSuffix(origin, ".play-with-go.dev") {
+	corsHandler := gh.CORS(
+		gh.AllowCredentials(),
+		gh.AllowedHeaders([]string{"x-requested-with", "content-type"}),
+		gh.AllowedMethods([]string{"GET", "POST", "HEAD", "DELETE"}),
+		gh.AllowedOrigins([]string{"*"}),
+		gh.AllowedOriginValidator(func(origin string) bool {
 			return true
-		}
-		return false
-	}), gh.AllowedOrigins([]string{}))
+		}))
 
 	// Specific routes
 	r.HandleFunc("/ping", Ping).Methods("GET")
