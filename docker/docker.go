@@ -62,6 +62,9 @@ type DockerApi interface {
 
 	ConfigCreate(name string, labels map[string]string, data []byte) error
 	ConfigDelete(name string) error
+
+	VolumeCreate(name string, labels map[string]string) error
+	VolumeInspect(name string) (types.Volume, error)
 }
 
 type SwarmTokens struct {
@@ -188,7 +191,7 @@ func (d *docker) GetPorts() ([]uint16, error) {
 }
 
 func (d *docker) ContainerStats(name string) (io.ReadCloser, error) {
-	stats, err := d.c.ContainerStats(context.Background(), name, false)
+	stats, err := d.c.ContainerStats(context.Background(), name, true)
 
 	return stats.Body, err
 }
@@ -266,6 +269,7 @@ type CreateContainerOpts struct {
 	Networks       []string
 	DindVolumeSize string
 	Envs           []string
+	UserVolume     string
 }
 
 func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
@@ -317,9 +321,34 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	}
 	h.Resources.PidsLimit = &pidsLimit
 
+	memoryLimit := config.DefaultLimitMemory * Megabyte
 	if memLimit := os.Getenv("MAX_MEMORY_MB"); memLimit != "" {
 		if i, err := strconv.Atoi(memLimit); err == nil {
-			h.Resources.Memory = int64(i) * Megabyte
+			memoryLimit = int64(i) * Megabyte
+		}
+	}
+
+	if memoryLimit > 0 {
+		h.Resources.Memory = memoryLimit
+		log.Printf("Setting memory limit to %d MB for container %s\n", memoryLimit/Megabyte, opts.ContainerName)
+	}
+
+	cpuLimit := config.DefaultLimitCPUCore
+	if cpuLimit > 0 {
+		// Convert CPUs to NanoCPUs (1 CPU = 1e9 nano CPUs)
+		h.Resources.NanoCPUs = int64(cpuLimit * 1e9)
+
+		// Set CpusetCpus to limit visible CPUs (e.g., "0-1" for 2 CPUs)
+		// This makes htop and other tools show only the allocated CPUs
+		numCPUs := int(cpuLimit)
+		if numCPUs > 0 {
+			if numCPUs == 1 {
+				h.Resources.CpusetCpus = "0"
+			} else {
+				h.Resources.CpusetCpus = fmt.Sprintf("0-%d", numCPUs-1)
+			}
+
+			log.Printf("Setting CPU limit to %.2f CPUs (cpuset: %s) for container %s\n", cpuLimit, h.Resources.CpusetCpus, opts.ContainerName)
 		}
 	}
 
@@ -361,6 +390,15 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 				d.c.VolumeRemove(context.Background(), opts.SessionId, true)
 			}
 		}()
+	}
+
+	if opts.UserVolume != "" {
+		if h.Binds == nil {
+			h.Binds = []string{}
+		}
+
+		// UserVolume contains the absolute host path
+		h.Binds = append(h.Binds, fmt.Sprintf("%s:/data", opts.UserVolume))
 	}
 
 	container, err := d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
@@ -578,6 +616,19 @@ func (d *docker) SwarmInit(advertiseAddr string) (*SwarmTokens, error) {
 func (d *docker) SwarmJoin(addr, token string) error {
 	req := swarm.JoinRequest{RemoteAddrs: []string{addr}, JoinToken: token, ListenAddr: "0.0.0.0:2377", AdvertiseAddr: "eth0"}
 	return d.c.SwarmJoin(context.Background(), req)
+}
+
+func (d *docker) VolumeCreate(name string, labels map[string]string) error {
+	_, err := d.c.VolumeCreate(context.Background(), volume.VolumeCreateBody{
+		Name:   name,
+		Labels: labels,
+	})
+
+	return err
+}
+
+func (d *docker) VolumeInspect(name string) (types.Volume, error) {
+	return d.c.VolumeInspect(context.Background(), name)
 }
 
 func NewDocker(c *client.Client) *docker {

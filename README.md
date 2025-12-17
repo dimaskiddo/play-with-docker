@@ -28,7 +28,7 @@ sudo modprobe xt_ipvs
 docker swarm init
 
 # Get the latest franela/dind image
-docker pull franela/dind
+docker pull franela/dind:latest
 
 # Start Play With Docker as a container
 docker compose up -d
@@ -40,8 +40,7 @@ to create a new session, followed by "ADD NEW INSTANCE" to launch a new terminal
 Notes:
 
 * There is a hard-coded limit of 5 Docker playgrounds per session. After 4 hours sessions are deleted.
-* If you want to override the DIND version or image then set the environmental variable i.e.
-  `DIND_IMAGE=franela/dind:latest`. Take into account that you can't use standard `dind` images, only [franela](https://hub.docker.com/r/franela/) ones work.
+* If you want to override the DIND version or image then set the environmental variable `PWD_DIND_IMAGE=franela/dind:latest` [franela](https://hub.docker.com/r/franela/).
 
 ### Port Forwarding
 
@@ -66,10 +65,9 @@ If you need to access your services from outside, use the following URL pattern 
 
 No, it needs to run on those ports for DNS resolve to work. Ideas or suggestions about how to improve this are welcome
 
-
 ## Hints
 
-### How can I use Copy / Paste shortcuts?
+### How can I use Copy / Paste Shortcuts?
 
 - Ctrl  + Insert : Copy
 - Shift + Insert : Paste

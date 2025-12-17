@@ -52,11 +52,7 @@ func main() {
 		log.Fatalf("Cannot parse duration Got: %v", err)
 	}
 
-	dindImage := os.Getenv("DIND_IMAGE")
-	if dindImage == "" {
-		dindImage = "franela/dind:latest"
-	}
-
+	dindImage := config.GetEnvString("PWD_DIND_IMAGE", "franela/dind:latest")
 	playground := types.Playground{
 		Domain:                      config.PlaygroundDomain,
 		DefaultDinDInstanceImage:    dindImage,

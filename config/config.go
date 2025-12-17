@@ -26,7 +26,7 @@ var (
 
 var (
 	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain,
-	SessionDuration, SessionsFile, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
+	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
 	LetsEncryptCertsDir, AdminToken, SegmentId string
 )
 
@@ -35,7 +35,8 @@ var (
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
 	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
-	MaxLoadAvg                                                      float64
+	DefaultLimitCPUCore, MaxLoadAvg                                 float64
+	DefaultLimitMemory                                              int64
 	SecureCookie                                                    *securecookie.SecureCookie
 )
 
@@ -52,15 +53,31 @@ func ParseFlags() {
 	flag.StringVar(&PortNumber, "port", GetEnvString("PWD_PORT", "3000"), "Play With Docker Port")
 	flag.StringVar(&PlaygroundDomain, "domain", GetEnvString("PWD_DOMAIN", "localhost"), "Play With Docker Domain")
 
+	flag.StringVar(&DockerClientID, "sso-docker-client-id", GetEnvString("PWD_SSO_DOCKER_CLIENT_ID", ""), "Single-Sign-On Docker Client ID")
+	flag.StringVar(&DockerClientSecret, "sso-docker-client-secret", GetEnvString("PWD_SSO_DOCKER_CLIENT_SECRET", ""), "Single-Sign-On Docker Client Secret")
+
+	flag.StringVar(&GithubClientID, "sso-github-client-id", GetEnvString("PWD_SSO_GITHUB_CLIENT_ID", ""), "Single-Sign-On GitHub Client ID")
+	flag.StringVar(&GithubClientSecret, "sso-github-client-secret", GetEnvString("PWD_SSO_GITHUB_CLIENT_SECRET", ""), "Single-Sign-On GitHub Client Secret")
+
+	flag.StringVar(&GoogleClientID, "sso-google-client-id", GetEnvString("PWD_SSO_GOOGLE_CLIENT_ID", ""), "Single-Sign-On Google Client ID")
+	flag.StringVar(&GoogleClientSecret, "sso-google-client-secret", GetEnvString("PWD_SSO_GOOGLE_CLIENT_SECRET", ""), "Single-Sign-On Google Client Secret")
+
+	flag.StringVar(&AzureClientID, "sso-azure-client-id", GetEnvString("PWD_SSO_AZURE_CLIENT_ID", ""), "Single-Sign-On Microsoft Azure Client ID")
+	flag.StringVar(&AzureClientSecret, "sso-azure-client-secret", GetEnvString("PWD_SSO_AZURE_CLIENT_SECRET", ""), "Single-Sign-On Microsoft Azure Client Secret")
+	flag.StringVar(&AzureTenantID, "sso-azure-tenant-id", GetEnvString("PWD_SSO_AZURE_TENANT_ID", "common"), "Single-Sign-On Microsoft Azure Tenant ID")
+
 	flag.StringVar(&PWDContainerName, "name", GetEnvString("PWD_CONTAINER_NAME", "play-with-docker"), "Play With Docker Container Name")
 	flag.StringVar(&L2ContainerName, "l2-name", GetEnvString("PWD_L2_CONTAINER_NAME", "play-with-docker-router"), "L2 Router Container Name")
 	flag.StringVar(&L2RouterIP, "l2-ip", GetEnvString("PWD_L2_ROUTER_IP", ""), "L2 Router IP address for Ping Response")
 	flag.StringVar(&L2Subdomain, "l2-subdomain", GetEnvString("PWD_L2_SUBDOMAIN", "apps"), "L2 Router Subdomain for Ingress")
 
-	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
-	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
-
 	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
+	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
+
+	flag.Float64Var(&DefaultLimitCPUCore, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
+	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 2048), "Default Resource Limit for Memory")
+
+	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
 
 	flag.StringVar(&HashKey, "cookies-secret", GetEnvString("PWD_COOKIES_SECRET", "play-with-docker-cookies"), "Cookies Secret")
 	flag.StringVar(&CookieHashKey, "cookies-key-hash", GetEnvString("PWD_COOKIES_KEY_HASH", ""), "Cookies Validation Hash Key")
@@ -78,19 +95,6 @@ func ParseFlags() {
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
-
-	flag.StringVar(&DockerClientID, "sso-docker-client-id", GetEnvString("PWD_SSO_DOCKER_CLIENT_ID", ""), "Single-Sign-On Docker Client ID")
-	flag.StringVar(&DockerClientSecret, "sso-docker-client-secret", GetEnvString("PWD_SSO_DOCKER_CLIENT_SECRET", ""), "Single-Sign-On Docker Client Secret")
-
-	flag.StringVar(&GithubClientID, "sso-github-client-id", GetEnvString("PWD_SSO_GITHUB_CLIENT_ID", ""), "Single-Sign-On GitHub Client ID")
-	flag.StringVar(&GithubClientSecret, "sso-github-client-secret", GetEnvString("PWD_SSO_GITHUB_CLIENT_SECRET", ""), "Single-Sign-On GitHub Client Secret")
-
-	flag.StringVar(&GoogleClientID, "sso-google-client-id", GetEnvString("PWD_SSO_GOOGLE_CLIENT_ID", ""), "Single-Sign-On Google Client ID")
-	flag.StringVar(&GoogleClientSecret, "sso-google-client-secret", GetEnvString("PWD_SSO_GOOGLE_CLIENT_SECRET", ""), "Single-Sign-On Google Client Secret")
-
-	flag.StringVar(&AzureClientID, "sso-azure-client-id", GetEnvString("PWD_SSO_AZURE_CLIENT_ID", ""), "Single-Sign-On Microsoft Azure Client ID")
-	flag.StringVar(&AzureClientSecret, "sso-azure-client-secret", GetEnvString("PWD_SSO_AZURE_CLIENT_SECRET", ""), "Single-Sign-On Microsoft Azure Client Secret")
-	flag.StringVar(&AzureTenantID, "sso-azure-tenant-id", GetEnvString("PWD_SSO_AZURE_TENANT_ID", "common"), "Single-Sign-On Microsoft Azure Tenant ID")
 
 	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()

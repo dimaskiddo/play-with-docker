@@ -59,6 +59,34 @@ func GetEnvInt(envName string, envDefault int) int {
 	return int(retValue)
 }
 
+func GetEnvInt32(envName string, envDefault int32) int32 {
+	envValue, err := SanitizeEnv(envName)
+	if err != nil {
+		return envDefault
+	}
+
+	retValue, err := strconv.ParseInt(envValue, 0, 32)
+	if err != nil {
+		return envDefault
+	}
+
+	return int32(retValue)
+}
+
+func GetEnvInt64(envName string, envDefault int64) int64 {
+	envValue, err := SanitizeEnv(envName)
+	if err != nil {
+		return envDefault
+	}
+
+	retValue, err := strconv.ParseInt(envValue, 0, 64)
+	if err != nil {
+		return envDefault
+	}
+
+	return int64(retValue)
+}
+
 func GetEnvFloat32(envName string, envDefault float32) float32 {
 	envValue, err := SanitizeEnv(envName)
 	if err != nil {

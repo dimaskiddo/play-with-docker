@@ -79,9 +79,14 @@ func Login(rw http.ResponseWriter, req *http.Request) {
 		provider.RedirectURL = fmt.Sprintf("%s/oauth/providers/%s/callback", playground.AuthRedirectBase, providerName)
 	} else {
 		scheme := "http"
-		if req.TLS != nil {
+
+		forwardedProto := req.Header.Get("X-Forwarded-Proto")
+		if forwardedProto == "https" {
+			scheme = "https"
+		} else if req.TLS != nil {
 			scheme = "https"
 		}
+
 		host := "localhost"
 		if req.Host != "" {
 			host = req.Host
