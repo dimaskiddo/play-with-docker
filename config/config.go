@@ -24,17 +24,26 @@ var (
 	AliasFilter = regexp.MustCompile(AliasPortGroupRegex)
 )
 
-// Unsafe enables a number of unsafe features when set. It is principally
-// intended to be used in development. For example, it allows the caller to
-// specify the Docker networks to join.
 var (
-	PortNumber, PlaygroundDomain, SessionsFile, PWDContainerName, L2ContainerName, L2Subdomain, SessionDuration, HashKey, SSHKeyPath, L2RouterIP, CookieHashKey, CookieBlockKey, SegmentId string
-	UseLetsEncrypt, ExternalDindVolume, NoWindows                                                                                                                                          bool
-	LetsEncryptCertsDir                                                                                                                                                                    string
-	MaxLoadAvg                                                                                                                                                                             float64
-	ForceTLS, Unsafe                                                                                                                                                                       bool
-	SecureCookie                                                                                                                                                                           *securecookie.SecureCookie
-	AdminToken                                                                                                                                                                             string
+	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain,
+	SessionDuration, SessionsFile, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
+	LetsEncryptCertsDir, AdminToken, SegmentId string
+)
+
+var (
+	// Unsafe enables a number of unsafe features when set. It is principally
+	// intended to be used in development. For example, it allows the caller to
+	// specify the Docker networks to join.
+	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
+	MaxLoadAvg                                                      float64
+	SecureCookie                                                    *securecookie.SecureCookie
+)
+
+var (
+	DockerClientID, DockerClientSecret              string
+	GithubClientID, GithubClientSecret              string
+	GoogleClientID, GoogleClientSecret              string
+	AzureClientID, AzureClientSecret, AzureTenantID string
 )
 
 var Providers = map[string]map[string]*oauth2.Config{}
@@ -69,6 +78,19 @@ func ParseFlags() {
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
+
+	flag.StringVar(&DockerClientID, "sso-docker-client-id", GetEnvString("PWD_SSO_DOCKER_CLIENT_ID", ""), "Single-Sign-On Docker Client ID")
+	flag.StringVar(&DockerClientSecret, "sso-docker-client-secret", GetEnvString("PWD_SSO_DOCKER_CLIENT_SECRET", ""), "Single-Sign-On Docker Client Secret")
+
+	flag.StringVar(&GithubClientID, "sso-github-client-id", GetEnvString("PWD_SSO_GITHUB_CLIENT_ID", ""), "Single-Sign-On GitHub Client ID")
+	flag.StringVar(&GithubClientSecret, "sso-github-client-secret", GetEnvString("PWD_SSO_GITHUB_CLIENT_SECRET", ""), "Single-Sign-On GitHub Client Secret")
+
+	flag.StringVar(&GoogleClientID, "sso-google-client-id", GetEnvString("PWD_SSO_GOOGLE_CLIENT_ID", ""), "Single-Sign-On Google Client ID")
+	flag.StringVar(&GoogleClientSecret, "sso-google-client-secret", GetEnvString("PWD_SSO_GOOGLE_CLIENT_SECRET", ""), "Single-Sign-On Google Client Secret")
+
+	flag.StringVar(&AzureClientID, "sso-azure-client-id", GetEnvString("PWD_SSO_AZURE_CLIENT_ID", ""), "Single-Sign-On Microsoft Azure Client ID")
+	flag.StringVar(&AzureClientSecret, "sso-azure-client-secret", GetEnvString("PWD_SSO_AZURE_CLIENT_SECRET", ""), "Single-Sign-On Microsoft Azure Client Secret")
+	flag.StringVar(&AzureTenantID, "sso-azure-tenant-id", GetEnvString("PWD_SSO_AZURE_TENANT_ID", "common"), "Single-Sign-On Microsoft Azure Tenant ID")
 
 	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()

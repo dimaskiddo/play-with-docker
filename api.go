@@ -52,7 +52,31 @@ func main() {
 		log.Fatalf("Cannot parse duration Got: %v", err)
 	}
 
-	playground := types.Playground{Domain: config.PlaygroundDomain, DefaultDinDInstanceImage: "franela/dind", AvailableDinDInstanceImages: []string{"franela/dind"}, AllowWindowsInstances: config.NoWindows, DefaultSessionDuration: d, Extras: map[string]interface{}{"LoginRedirect": "http://localhost:3000"}, Privileged: true}
+	dindImage := os.Getenv("DIND_IMAGE")
+	if dindImage == "" {
+		dindImage = "franela/dind:latest"
+	}
+
+	playground := types.Playground{
+		Domain:                      config.PlaygroundDomain,
+		DefaultDinDInstanceImage:    dindImage,
+		AvailableDinDInstanceImages: []string{dindImage},
+		AllowWindowsInstances:       config.NoWindows,
+		DefaultSessionDuration:      d,
+		Extras:                      map[string]interface{}{"LoginRedirect": "http://localhost:3000"},
+		Privileged:                  true,
+		Tasks:                       []string{".*"},
+		DockerClientID:              config.DockerClientID,
+		DockerClientSecret:          config.DockerClientSecret,
+		GithubClientID:              config.GithubClientID,
+		GithubClientSecret:          config.GithubClientSecret,
+		GoogleClientID:              config.GoogleClientID,
+		GoogleClientSecret:          config.GoogleClientSecret,
+		AzureClientID:               config.AzureClientID,
+		AzureClientSecret:           config.AzureClientSecret,
+		AzureTenantID:               config.AzureTenantID,
+	}
+
 	if _, err := core.PlaygroundNew(playground); err != nil {
 		log.Fatalf("Cannot create default playground. Got: %v", err)
 	}
