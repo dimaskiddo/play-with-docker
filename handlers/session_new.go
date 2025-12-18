@@ -91,24 +91,6 @@ func NewSession(rw http.ResponseWriter, req *http.Request) {
 
 		return
 	} else {
-		if stack == "" {
-			log.Printf("Creating default instance for session %s\n", s.Id)
-
-			instanceConfig := types.InstanceConfig{
-				ImageName:      imageName,
-				PlaygroundFQDN: req.Host,
-				Privileged:     true,
-				DindVolumeSize: "5G",
-			}
-
-			_, err := core.InstanceNew(s, instanceConfig)
-			if err != nil {
-				log.Printf("Error creating default instance for session %s: %v\n", s.Id, err)
-			} else {
-				log.Printf("Successfully created default instance for session %s\n", s.Id)
-			}
-		}
-
 		hostname := req.Host
 
 		// If request is not a form, return sessionId in the body

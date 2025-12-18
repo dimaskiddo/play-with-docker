@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const hostPattern = "^.*ip([0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3})-([0-9|a-z]+)(?:-?([0-9]{1,5}))?(?:\\.([a-z|A-Z|0-9|_|\\-\\.]+))?(?:\\:([0-9]{1,5}))?$"
+const hostPattern = "^.*ip-([0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3})-([0-9|a-z]+)(?:-?([0-9]{1,5}))?(?:\\.([a-z|A-Z|0-9|_|\\-\\.]+))?(?:\\:([0-9]{1,5}))?$"
 
 var hostRegex *regexp.Regexp
 
@@ -32,19 +32,15 @@ type HostInfo struct {
 func EncodeHost(sessionId, instanceIP string, opts HostOpts) string {
 	encodedIP := strings.Replace(instanceIP, ".", "-", -1)
 
-	// Shorten session ID to first 8 characters
-	shortSessionId := sessionId
-	if len(sessionId) > 8 {
-		shortSessionId = sessionId[:8]
-	}
-
-	sub := fmt.Sprintf("ip%s-%s", encodedIP, shortSessionId)
+	sub := fmt.Sprintf("ip-%s-%s", encodedIP, sessionId)
 	if opts.EncodedPort > 0 {
 		sub = fmt.Sprintf("%s-%d", sub, opts.EncodedPort)
 	}
+
 	if opts.TLD != "" {
 		sub = fmt.Sprintf("%s.%s", sub, opts.TLD)
 	}
+
 	if opts.Port > 0 {
 		sub = fmt.Sprintf("%s:%d", sub, opts.Port)
 	}

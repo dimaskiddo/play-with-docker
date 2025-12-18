@@ -62,7 +62,6 @@ type SessionSetupInstanceConf struct {
 func (p *pwd) SessionNew(ctx context.Context, config types.SessionConfig) (*types.Session, error) {
 	defer observeAction("SessionNew", time.Now())
 
-	// Annonymous users should be also allowed to login
 	if config.UserId != "" {
 		if _, err := p.UserGet(config.UserId); errors.Is(err, userBannedError) {
 			return nil, &AccessDeniedError{err}
@@ -71,8 +70,12 @@ func (p *pwd) SessionNew(ctx context.Context, config types.SessionConfig) (*type
 		}
 	}
 
+	// Shorten Session ID to Only 8 Characters
+	shId := p.generator.NewId()
+	shId = shId[:8]
+
 	s := &types.Session{}
-	s.Id = p.generator.NewId()
+	s.Id = shId
 	s.CreatedAt = time.Now()
 	s.ExpiresAt = s.CreatedAt.Add(config.Duration)
 	s.Ready = true

@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
+
 	"log"
 	"net"
 	"net/http"
@@ -64,27 +65,34 @@ func (r *proxyRouter) listen(wg *sync.WaitGroup, httpAddr, dnsAddr, sshAddr stri
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	l, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	r.httpListener = l
 	wg.Add(1)
+
 	go func() {
 		for !r.closed {
 			conn, err := r.httpListener.AcceptTCP()
 			if err != nil {
 				continue
 			}
+
 			conn.SetKeepAlive(true)
 			conn.SetKeepAlivePeriod(3 * time.Minute)
+
 			go r.handleConnection(conn)
 		}
+
 		wg.Done()
 	}()
 
 	dnsMux := dns.NewServeMux()
 	dnsMux.HandleFunc(".", r.dnsRequest)
+
 	r.udpDnsServer = &dns.Server{Addr: dnsAddr, Net: "udp", Handler: dnsMux}
 	r.tcpDnsServer = &dns.Server{Addr: dnsAddr, Net: "tcp", Handler: dnsMux}
 
@@ -94,11 +102,14 @@ func (r *proxyRouter) listen(wg *sync.WaitGroup, httpAddr, dnsAddr, sshAddr stri
 	r.udpDnsServer.NotifyStartedFunc = func() {
 		wgStarted.Done()
 	}
+
 	r.tcpDnsServer.NotifyStartedFunc = func() {
 		wgStarted.Done()
 	}
+
 	go r.udpDnsServer.ListenAndServe()
 	go r.tcpDnsServer.ListenAndServe()
+
 	wgStarted.Wait()
 
 	lssh, err := net.Listen("tcp", sshAddr)
@@ -133,7 +144,6 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 		return
 	}
 
-	// The incoming Request channel must be serviced.
 	go ssh.DiscardRequests(reqs)
 
 	newChannel := <-chans
@@ -202,7 +212,6 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 		}
 	}()
 
-	// Forward the session channel
 	channel2, reqs2, err := client.OpenChannel("session", []byte{})
 	if err != nil {
 		fmt.Fprintf(stderr, "Remote session setup failed: %v\r\n", err)
@@ -219,6 +228,7 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 			maskedReqs <- req
 		}
 	}()
+
 	proxySsh(maskedReqs, reqs2, channel, channel2)
 }
 
@@ -228,33 +238,40 @@ func (r *proxyRouter) dnsRequest(w dns.ResponseWriter, req *dns.Msg) {
 
 		if question == "localhost." {
 			log.Printf("Asked for [localhost.] returning automatically [127.0.0.1]\n")
+
 			m := new(dns.Msg)
+
 			m.SetReply(req)
 			m.Authoritative = true
 			m.RecursionAvailable = true
+
 			a, err := dns.NewRR(fmt.Sprintf("%s 60 IN A 127.0.0.1", question))
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			m.Answer = append(m.Answer, a)
 			w.WriteMsg(m)
+
 			return
 		}
 
 		info, err := r.director(ProtocolDNS, strings.TrimSuffix(question, "."))
 		if err != nil {
-			// Director couldn't resolve it, try to lookup in the system's DNS
 			ips, err := net.LookupIP(question)
 			if err != nil {
-				// we have no information about this and we are not a recursive dns server, so we just fail so the client can fallback to the next dns server it has configured
 				w.Close()
 				// dns.HandleFailed(w, r)
+
 				return
 			}
+
 			m := new(dns.Msg)
+
 			m.SetReply(req)
 			m.Authoritative = true
 			m.RecursionAvailable = true
+
 			for _, ip := range ips {
 				ipv4 := ip.To4()
 				if ipv4 == nil {
@@ -262,33 +279,43 @@ func (r *proxyRouter) dnsRequest(w dns.ResponseWriter, req *dns.Msg) {
 					if err != nil {
 						log.Fatal(err)
 					}
+
 					m.Answer = append(m.Answer, a)
 				} else {
 					a, err := dns.NewRR(fmt.Sprintf("%s 60 IN A %s", question, ipv4.String()))
 					if err != nil {
 						log.Fatal(err)
 					}
+
 					m.Answer = append(m.Answer, a)
 				}
 			}
+
 			w.WriteMsg(m)
 			return
 		}
+
 		dstHost := info.Dst
 
 		m := new(dns.Msg)
+
 		m.SetReply(req)
 		m.Authoritative = true
 		m.RecursionAvailable = true
+
 		a, err := dns.NewRR(fmt.Sprintf("%s 60 IN A %s", question, dstHost.IP))
 		if err != nil {
 			log.Println(err)
+
 			w.Close()
 			// dns.HandleFailed(w, r)
+
 			return
 		}
+
 		m.Answer = append(m.Answer, a)
 		w.WriteMsg(m)
+
 		return
 	}
 }
@@ -300,9 +327,11 @@ func (r *proxyRouter) Close() {
 	if r.httpListener != nil {
 		r.httpListener.Close()
 	}
+
 	if r.udpDnsServer != nil {
 		r.udpDnsServer.Shutdown()
 	}
+
 	r.closed = true
 }
 
@@ -310,6 +339,7 @@ func (r *proxyRouter) ListenHttpAddress() string {
 	if r.httpListener != nil {
 		return r.httpListener.Addr().String()
 	}
+
 	return ""
 }
 
@@ -339,22 +369,25 @@ func (r *proxyRouter) ListenSshAddress() string {
 
 func (r *proxyRouter) handleConnection(c net.Conn) {
 	defer c.Close()
-	// first try tls
+
 	start := time.Now()
 	vhostConn, err := vhost.TLS(c)
 	discoverElapsed := time.Since(start)
 
 	if err == nil {
-		// It is a TLS connection
 		defer vhostConn.Close()
 		host := vhostConn.ClientHelloMsg.ServerName
+
 		log.Printf("Proxying TLS connection to %s. Discover took %s\n", host, discoverElapsed)
+
 		info, err := r.director(ProtocolHTTPS, host)
 		if err != nil {
 			log.Printf("Error directing request: %v\n", err)
 			return
 		}
+
 		dstHost := info.Dst
+
 		d, err := r.dialer.Dial("tcp", dstHost.String())
 		if err != nil {
 			log.Printf("Error dialing backend %s: %v\n", dstHost.String(), err)
@@ -363,44 +396,49 @@ func (r *proxyRouter) handleConnection(c net.Conn) {
 
 		proxyConn(vhostConn, d)
 	} else {
-		// it is not TLS
-		// treat it as an http connection
-
 		start := time.Now()
 		req, err := http.ReadRequest(bufio.NewReader(vhostConn))
+
 		httpReadElapsed := time.Since(start)
 		if err != nil {
-			// It is not http neither. So just close the connection.
 			return
 		}
+
 		host := req.Header.Get("X-Forwarded-Host")
 		if host == "" {
 			host = req.Host
 		}
+
 		log.Printf("Proxying http connection to %s. Discover took %s. Http read took %s\n", host, discoverElapsed, httpReadElapsed)
+
 		info, err := r.director(ProtocolHTTP, host)
 		if err != nil {
 			log.Printf("Error directing request: %v\n", err)
 			return
 		}
+
 		dstHost := info.Dst
+
 		d, err := r.dialer.Dial("tcp", dstHost.String())
 		if err != nil {
 			log.Printf("Error dialing backend %s: %v\n", dstHost.String(), err)
 			return
 		}
 		defer d.Close()
+
 		err = req.Write(d)
 		if err != nil {
 			log.Printf("Error requesting backend %s: %v\n", dstHost.String(), err)
 			return
 		}
+
 		proxyConn(c, d)
 	}
 }
 
 func proxySsh(reqs1, reqs2 <-chan *ssh.Request, channel1, channel2 ssh.Channel) {
 	var closer sync.Once
+
 	closeFunc := func() {
 		channel1.Close()
 		channel2.Close()
@@ -426,21 +464,26 @@ func proxySsh(reqs1, reqs2 <-chan *ssh.Request, channel1, channel2 ssh.Channel) 
 			if req == nil {
 				return
 			}
+
 			b, err := channel2.SendRequest(req.Type, req.WantReply, req.Payload)
 			if err != nil {
 				return
 			}
+
 			req.Reply(b, nil)
 
 		case req := <-reqs2:
 			if req == nil {
 				return
 			}
+
 			b, err := channel1.SendRequest(req.Type, req.WantReply, req.Payload)
 			if err != nil {
 				return
 			}
+
 			req.Reply(b, nil)
+
 		case <-closerChan:
 			return
 		}
@@ -461,11 +504,19 @@ func proxyConn(src, dst net.Conn) {
 
 func NewRouter(director Director, keyPath string) *proxyRouter {
 	sshConfig := &ssh.ServerConfig{
+		PasswordCallback: func(c ssh.ConnMetadata, paswd []byte) (*ssh.Permissions, error) {
+			return &ssh.Permissions{
+				Extensions: map[string]string{
+					"password": string(paswd),
+				},
+			}, nil
+		},
 		PublicKeyCallback: func(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 			return nil, nil
 		},
 	}
-	privateBytes, err := ioutil.ReadFile(keyPath)
+
+	privateBytes, err := os.ReadFile(keyPath)
 	if err != nil {
 		log.Fatal("Failed to load private key: ", err)
 	}

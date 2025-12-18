@@ -119,6 +119,7 @@ func monitorNetworks() {
 					log.Println(err)
 					return
 				}
+
 				err = json.NewEncoder(f).Encode(container.NetworkSettings.Networks)
 				if err != nil {
 					log.Println(err)
