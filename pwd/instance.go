@@ -89,7 +89,6 @@ func (p *pwd) InstanceDelete(session *types.Session, instance *types.Instance) e
 	}
 
 	p.event.Emit(event.INSTANCE_DELETE, session.Id, instance.Name)
-
 	p.setGauges()
 
 	return nil
@@ -119,7 +118,6 @@ func (p *pwd) InstanceNew(session *types.Session, conf types.InstanceConfig) (*t
 	}
 
 	p.event.Emit(event.INSTANCE_NEW, session.Id, instance.Name, instance.IP, instance.Hostname, instance.ProxyHost)
-
 	p.setGauges()
 
 	return instance, nil
@@ -132,11 +130,13 @@ func (p *pwd) InstanceExec(instance *types.Instance, cmd []string) (int, error) 
 	if err != nil {
 		return -1, err
 	}
+
 	exitCode, err := prov.InstanceExec(instance, cmd)
 	if err != nil {
 		log.Println(err)
 		return -1, err
 	}
+
 	return exitCode, nil
 }
 
@@ -147,6 +147,7 @@ func (p *pwd) InstanceFSTree(instance *types.Instance) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return prov.InstanceFSTree(instance)
 }
 
@@ -157,5 +158,6 @@ func (p *pwd) InstanceFile(instance *types.Instance, filePath string) (io.Reader
 	if err != nil {
 		return nil, err
 	}
+
 	return prov.InstanceFile(instance, filePath)
 }

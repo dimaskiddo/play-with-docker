@@ -3,7 +3,9 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/dimaskiddo/play-with-docker/provisioner"
 	"github.com/dimaskiddo/play-with-docker/storage"
 	"github.com/gorilla/mux"
 )
@@ -26,6 +28,14 @@ func CloseSession(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	volpath, err := provisioner.AbsUserVolumePath(session)
+	if err != nil {
+		log.Println(err)
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_ = os.RemoveAll(volpath)
 
 	ResetCookie(rw, req.Host)
 }

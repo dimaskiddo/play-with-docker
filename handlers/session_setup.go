@@ -27,6 +27,7 @@ func SessionSetup(rw http.ResponseWriter, req *http.Request) {
 	if playground == nil {
 		log.Printf("Playground with id %s for session %s was not found!", s.PlaygroundId, s.Id)
 		rw.WriteHeader(http.StatusBadRequest)
+
 		return
 	}
 
@@ -48,6 +49,7 @@ func SessionSetup(rw http.ResponseWriter, req *http.Request) {
 
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 }

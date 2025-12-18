@@ -148,6 +148,7 @@ func (p *pwd) SessionClose(s *types.Session) error {
 	}
 
 	log.Printf("Cleaned up session [%s]\n", s.Id)
+
 	p.setGauges()
 	p.event.Emit(event.SESSION_END, s.Id)
 

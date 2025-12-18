@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -54,7 +53,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		conf.ImageName = playground.DefaultDinDInstanceImage
 	}
 
-	log.Printf("NewInstance - Using Image: [%s]\n", conf.ImageName)
+	log.Printf("New instance using image [%s]\n", conf.ImageName)
 
 	if conf.Hostname == "" {
 		instances, err := d.storage.InstanceFindBySessionId(session.Id)
@@ -88,7 +87,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		return nil, err
 	}
 
-	userVolumePath, err := d.getUserVolumePath(session)
+	userVolumePath, err := d.GetUserVolumePath(session)
 	if err != nil {
 		log.Printf("Error getting user data directory: %v\n", err)
 		userVolumePath = ""
@@ -357,52 +356,37 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 	return nil
 }
 
-func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
+func (d *DinD) GetUserVolumePath(session *types.Session) (string, error) {
+	path, err := AbsUserVolumePath(session)
+	if err != nil {
+		return "", nil
+	}
+
+	log.Printf("Get Host bind mount path for user %s: %s\n", session.Id, path)
+
+	return path, nil
+}
+
+func AbsUserVolumePath(session *types.Session) (string, error) {
 	if session.Id == "" {
-		log.Printf("Error user session id not found, continue without volume")
+		log.Printf("Error getting volume path: user session id not found")
 		return "", nil
 	}
 
 	baseDataDir := config.ExternalDataDir
 	if baseDataDir == "" {
-		baseDataDir = "./data"
+		baseDataDir = "/data/play-with-docker"
 	}
 
 	userDataPath := filepath.Join(baseDataDir, session.Id)
-	if _, err := os.Stat(userDataPath); os.IsNotExist(err) {
-		log.Printf("Creating persistent data directory %s for user %s\n", userDataPath, session.Id)
-
-		err = os.MkdirAll(userDataPath, 0755)
+	if !filepath.IsAbs(userDataPath) {
+		absPath, err := filepath.Abs(userDataPath)
 		if err != nil {
-			log.Printf("Error creating data directory %s: %v\n", userDataPath, err)
-			return "", err
-		}
-
-		err = os.Chown(userDataPath, 0, 0)
-		if err != nil {
-			log.Printf("Error changing ownership of data directory %s: %v\n", userDataPath, err)
-			return "", err
-		}
-	} else {
-		log.Printf("Reusing existing data directory %s for user %s\n", userDataPath, session.Id)
-	}
-
-	hostBaseDataDir := config.ExternalDataDirHost
-	if hostBaseDataDir == "" {
-		hostBaseDataDir = baseDataDir
-	}
-
-	hostUserDataPath := filepath.Join(hostBaseDataDir, session.Id)
-	if !filepath.IsAbs(hostUserDataPath) {
-		absPath, err := filepath.Abs(hostUserDataPath)
-		if err != nil {
-			log.Printf("Error getting absolute path for %s: %v\n", hostUserDataPath, err)
+			log.Printf("Error getting absolute path for %s: %v\n", userDataPath, err)
 		} else {
-			hostUserDataPath = absPath
+			userDataPath = absPath
 		}
 	}
 
-	log.Printf("Host bind mount path for user %s: %s\n", session.Id, hostUserDataPath)
-
-	return hostUserDataPath, nil
+	return userDataPath, nil
 }

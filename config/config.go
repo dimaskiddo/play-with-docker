@@ -35,7 +35,7 @@ var (
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
 	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
-	ExternalDindVolumeSize, ExternalDataDir, ExternalDataDirHost    string
+	ExternalDindVolumeSize, ExternalDataDir                         string
 	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg              float64
 	DefaultLimitMemory, DefaultMaxMemory                            int64
 	DefaultMaxPIDs                                                  int64
@@ -108,15 +108,13 @@ func ParseFlags() {
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DIND External Volume Through XFS Volume Driver")
 	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
-	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "./data"), "DIND External Data Directory to Store Persistent Data in /data Path")
+	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "/data/play-with-docker"), "DIND External Data Directory to Store Persistent Data in /data Path")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
 
 	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()
-
-	ExternalDataDirHost = GetEnvString("PWD_DOCKER_HOST_DATA_DIR", ExternalDataDir)
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
 }

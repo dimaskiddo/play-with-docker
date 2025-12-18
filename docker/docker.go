@@ -120,7 +120,6 @@ func (d *docker) NetworkConnect(containerId, networkId, ip string, aliases []str
 		return "", err
 	}
 
-	// Obtain the IP of the PWD container in this network
 	container, err := d.c.ContainerInspect(context.Background(), containerId)
 	if err != nil {
 		return "", err

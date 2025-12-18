@@ -294,11 +294,9 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 		return nil, err
 	}
 
-	// there should always be one asg
 	instances := out.AutoScalingGroups[0].Instances
 	availInstances := make([]string, len(instances))
 
-	// reverse order so older instances are first served
 	sort.Sort(sort.Reverse(sort.StringSlice(availInstances)))
 
 	for i, inst := range instances {
@@ -346,8 +344,6 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 	return instanceInfo, nil
 }
 
-// select free instance and lock it into db.
-// additionally check if ASG needs to be resized
 func (d *windows) pickFreeInstance(sessionId string, availInstances, assignedInstances []string) string {
 	for _, av := range availInstances {
 		found := false
@@ -367,6 +363,5 @@ func (d *windows) pickFreeInstance(sessionId string, availInstances, assignedIns
 		}
 	}
 
-	// all availalbe instances are assigned
 	return ""
 }

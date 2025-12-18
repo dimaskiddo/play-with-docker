@@ -419,7 +419,7 @@
       var subdomain = $scope.playground && $scope.playground.l2_subdomain ? $scope.playground.l2_subdomain : 'apps';
       var url = instance.proxy_host + '-' + port + '.' + subdomain + '.' + $scope.host;
 
-      return url;
+      return "http://" + url;
     }
 
     $scope.showInstance = function (instance) {

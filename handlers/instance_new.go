@@ -69,6 +69,7 @@ func NewInstance(rw http.ResponseWriter, req *http.Request) {
 
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)
+
 		return
 	} else {
 		rw.Header().Set("Content-Type", "application/json")
