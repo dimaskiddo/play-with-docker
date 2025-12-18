@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/storage"
 	"github.com/docker/docker/client"
@@ -77,7 +78,7 @@ func (f *localCachedFactory) GetForInstance(instance *types.Instance) (DockerApi
 		}
 	}
 
-	dc, err := NewClient(instance, "l2:443")
+	dc, err := NewClient(instance, fmt.Sprintf("%s:443", config.L2ContainerName))
 	if err != nil {
 		return nil, err
 	}

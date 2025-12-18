@@ -283,30 +283,31 @@ type CreateContainerOpts struct {
 	Networks       []string
 	NetAliases     []string
 	DindVolumeSize string
-	Envs           []string
 	UserVolume     string
+	LimitCPU       float64
+	LimitMemory    int64
+	Envs           []string
 }
 
 func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
-	// Make sure directories are available for the new instance container
 	containerDir := "/opt/pwd"
 	containerCertDir := fmt.Sprintf("%s/certs", containerDir)
 
 	env := append(opts.Envs, fmt.Sprintf("SESSION_ID=%s", opts.SessionId))
 
-	// Write certs to container cert dir
 	if len(opts.ServerCert) > 0 {
 		env = append(env, `DOCKER_TLSCERT=\/opt\/pwd\/certs\/cert.pem`)
 	}
+
 	if len(opts.ServerKey) > 0 {
 		env = append(env, `DOCKER_TLSKEY=\/opt\/pwd\/certs\/key.pem`)
 	}
+
 	if len(opts.CACert) > 0 {
-		// if ca cert is specified, verify that clients that connects present a certificate signed by the CA
 		env = append(env, `DOCKER_TLSCACERT=\/opt\/pwd\/certs\/ca.pem`)
 	}
+
 	if len(opts.ServerCert) > 0 || len(opts.ServerKey) > 0 || len(opts.CACert) > 0 {
-		// if any of the certs is specified, enable TLS
 		env = append(env, "DOCKER_TLSENABLE=true")
 	} else {
 		env = append(env, "DOCKER_TLSENABLE=false")
@@ -323,9 +324,8 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		h.SecurityOpt = []string{fmt.Sprintf("apparmor=%s", os.Getenv("APPARMOR_PROFILE"))}
 	}
 
-	if os.Getenv("STORAGE_SIZE") != "" {
-		// assing 10GB size FS for each container
-		h.StorageOpt = map[string]string{"size": os.Getenv("STORAGE_SIZE")}
+	if config.ExternalDindVolumeSize != "" {
+		h.StorageOpt = map[string]string{"size": config.ExternalDindVolumeSize}
 	}
 
 	var pidsLimit = int64(1000)
@@ -337,10 +337,12 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	h.Resources.PidsLimit = &pidsLimit
 
 	memoryLimit := config.DefaultLimitMemory * Megabyte
-	if memLimit := os.Getenv("MAX_MEMORY_MB"); memLimit != "" {
-		if i, err := strconv.Atoi(memLimit); err == nil {
-			memoryLimit = int64(i) * Megabyte
+	if opts.LimitMemory > 0 {
+		if opts.LimitMemory > config.DefaultMaxMemory {
+			opts.LimitMemory = config.DefaultMaxMemory
 		}
+
+		memoryLimit = opts.LimitMemory * Megabyte
 	}
 
 	if memoryLimit > 0 {
@@ -349,12 +351,18 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	}
 
 	cpuLimit := config.DefaultLimitCPUCore
+	if opts.LimitCPU > 0 {
+		if opts.LimitCPU > config.DefaultMaxCPUCore {
+			opts.LimitCPU = config.DefaultMaxCPUCore
+		}
+
+		cpuLimit = opts.LimitCPU
+	}
+
 	if cpuLimit > 0 {
 		// Convert CPUs to NanoCPUs (1 CPU = 1e9 nano CPUs)
 		h.Resources.NanoCPUs = int64(cpuLimit * 1e9)
 
-		// Set CpusetCpus to limit visible CPUs (e.g., "0-1" for 2 CPUs)
-		// This makes htop and other tools show only the allocated CPUs
 		numCPUs := int(cpuLimit)
 		if numCPUs > 0 {
 			if numCPUs == 1 {
@@ -438,7 +446,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		//}
 	}
 
-	// connect remaining networks if there are any
+	// Connect remaining networks if there are any
 	if len(opts.Networks) > 1 {
 		for _, nid := range opts.Networks {
 			err = d.c.NetworkConnect(context.Background(), nid, container.ID, &network.EndpointSettings{})
@@ -472,7 +480,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Timeout - let's check what happened to the container
+			// Timeout - Let's check what happened to the container
 			cinfo, inspectErr := d.c.ContainerInspect(context.Background(), container.ID)
 			if inspectErr != nil {
 				log.Printf("Error: Container %s failed to start and cannot be inspected: %v\n", opts.ContainerName, inspectErr)
@@ -486,6 +494,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 			}
 
 			return fmt.Errorf("container not running after timeout, status: %s", cinfo.State.Status)
+
 		default:
 			cinfo, inspectErr := d.c.ContainerInspect(context.Background(), container.ID)
 			if inspectErr != nil {
@@ -498,7 +507,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 				return nil
 			}
 
-			// Check if container exited/crashed
+			// Check if container Exited / Crashed
 			if cinfo.State.Status == "exited" || cinfo.State.Status == "dead" {
 				log.Printf("Container %s failed to start. Status: %s, ExitCode: %d, Error: %s\n",
 					opts.ContainerName, cinfo.State.Status, cinfo.State.ExitCode, cinfo.State.Error)

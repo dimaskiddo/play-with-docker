@@ -35,9 +35,9 @@ var (
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
 	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
-	DefaultDINDImage                                                string
-	DefaultLimitCPUCore, MaxLoadAvg                                 float64
-	DefaultLimitMemory                                              int64
+	DefaultDINDImage, ExternalDindVolumeSize                        string
+	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg              float64
+	DefaultLimitMemory, DefaultMaxMemory                            int64
 	SecureCookie                                                    *securecookie.SecureCookie
 )
 
@@ -86,6 +86,9 @@ func ParseFlags() {
 	flag.Float64Var(&DefaultLimitCPUCore, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
 	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 2048), "Default Resource Limit for Memory")
 
+	flag.Float64Var(&DefaultMaxCPUCore, "default-max-cpu", GetEnvFloat64("PWD_DEFAULT_MAX_CPU", 4.0), "Default Maximum Limit for CPU Core")
+	flag.Int64Var(&DefaultMaxMemory, "default-max-memory", GetEnvInt64("PWD_DEFAULT_MAX_MEMORY", 8192), "Default Maximum Limit for Memory")
+
 	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
 
 	flag.StringVar(&HashKey, "cookies-secret", GetEnvString("PWD_COOKIES_SECRET", "play-with-docker-cookies"), "Cookies Secret")
@@ -100,7 +103,8 @@ func ParseFlags() {
 	flag.BoolVar(&NoWindows, "windows-disable", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
 
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
-	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DINS External Volume Through XFS Volume Driver")
+	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DIND External Volume Through XFS Volume Driver")
+	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
 
 	flag.StringVar(&DataDirUser, "data-dir", GetEnvString("PWD_DATA_DIR", "./data"), "Data Directory Inside Container to Store User Persistent Data")
 
