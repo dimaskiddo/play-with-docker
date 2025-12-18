@@ -55,8 +55,8 @@ func main() {
 
 	playground := types.Playground{
 		Domain:                      config.PlaygroundDomain,
-		DefaultDinDInstanceImage:    config.DefaultDINDImage,
-		AvailableDinDInstanceImages: []string{config.DefaultDINDImage},
+		DefaultDinDInstanceImage:    config.DINDImage,
+		AvailableDinDInstanceImages: []string{config.DINDImage},
 		AllowWindowsInstances:       config.NoWindows,
 		DefaultSessionDuration:      d,
 		Extras:                      map[string]interface{}{"LoginRedirect": "http://localhost:3000"},

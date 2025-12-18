@@ -54,7 +54,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		conf.ImageName = playground.DefaultDinDInstanceImage
 	}
 
-	log.Printf("NewInstance - using image: [%s]\n", conf.ImageName)
+	log.Printf("NewInstance - Using Image: [%s]\n", conf.ImageName)
 
 	if conf.Hostname == "" {
 		instances, err := d.storage.InstanceFindBySessionId(session.Id)
@@ -67,6 +67,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		for i := 1; ; i++ {
 			nodeName = fmt.Sprintf("node%d", i)
 			exists := checkHostnameExists(session.Id, nodeName, instances)
+
 			if !exists {
 				break
 			}
@@ -87,12 +88,9 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		return nil, err
 	}
 
-	// Get or create user-specific persistent data directory
 	userVolumePath, err := d.getUserVolumePath(session)
 	if err != nil {
 		log.Printf("Error getting user data directory: %v\n", err)
-
-		// Continue without volume on error
 		userVolumePath = ""
 	}
 
@@ -253,7 +251,6 @@ func (d *DinD) InstanceResizeTerminal(instance *types.Instance, rows, cols uint)
 		return err
 	}
 
-	// Silently ignore "No such container" errors - container might not be fully started yet
 	err = dockerClient.ContainerResize(instance.Name, rows, cols)
 	if err != nil && strings.Contains(err.Error(), "No such container") {
 		return nil
@@ -361,18 +358,19 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 }
 
 func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
-	if session.UserId == "" {
+	if session.Id == "" {
+		log.Printf("Error user session id not found, continue without volume")
 		return "", nil
 	}
 
-	baseDataDir := config.DataDirUser
+	baseDataDir := config.ExternalDataDir
 	if baseDataDir == "" {
 		baseDataDir = "./data"
 	}
 
-	userDataPath := filepath.Join(baseDataDir, session.UserId)
+	userDataPath := filepath.Join(baseDataDir, session.Id)
 	if _, err := os.Stat(userDataPath); os.IsNotExist(err) {
-		log.Printf("Creating persistent data directory %s for user %s\n", userDataPath, session.UserId)
+		log.Printf("Creating persistent data directory %s for user %s\n", userDataPath, session.Id)
 
 		err = os.MkdirAll(userDataPath, 0755)
 		if err != nil {
@@ -380,21 +378,21 @@ func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
 			return "", err
 		}
 
-		err = os.Chown(userDataPath, 1000, 1000)
+		err = os.Chown(userDataPath, 0, 0)
 		if err != nil {
 			log.Printf("Error changing ownership of data directory %s: %v\n", userDataPath, err)
 			return "", err
 		}
 	} else {
-		log.Printf("Reusing existing data directory %s for user %s\n", userDataPath, session.UserId)
+		log.Printf("Reusing existing data directory %s for user %s\n", userDataPath, session.Id)
 	}
 
-	hostBaseDataDir := config.DataDirHost
+	hostBaseDataDir := config.ExternalDataDirHost
 	if hostBaseDataDir == "" {
 		hostBaseDataDir = baseDataDir
 	}
 
-	hostUserDataPath := filepath.Join(hostBaseDataDir, session.UserId)
+	hostUserDataPath := filepath.Join(hostBaseDataDir, session.Id)
 	if !filepath.IsAbs(hostUserDataPath) {
 		absPath, err := filepath.Abs(hostUserDataPath)
 		if err != nil {
@@ -404,7 +402,7 @@ func (d *DinD) getUserVolumePath(session *types.Session) (string, error) {
 		}
 	}
 
-	log.Printf("Host bind mount path for user %s: %s\n", session.UserId, hostUserDataPath)
+	log.Printf("Host bind mount path for user %s: %s\n", session.Id, hostUserDataPath)
 
 	return hostUserDataPath, nil
 }

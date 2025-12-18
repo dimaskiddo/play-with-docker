@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -223,7 +221,7 @@ func (d *docker) CreateAttachConnection(name string) (net.Conn, error) {
 }
 
 func (d *docker) CopyToContainer(containerName, destination, fileName string, content io.Reader) error {
-	contents, err := ioutil.ReadAll(content)
+	contents, err := io.ReadAll(content)
 	if err != nil {
 		return err
 	}
@@ -320,20 +318,15 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		LogConfig:   container.LogConfig{Config: map[string]string{"max-size": "10m", "max-file": "1"}},
 	}
 
-	if os.Getenv("APPARMOR_PROFILE") != "" {
-		h.SecurityOpt = []string{fmt.Sprintf("apparmor=%s", os.Getenv("APPARMOR_PROFILE"))}
+	if config.DINDAppArmor != "" {
+		h.SecurityOpt = []string{fmt.Sprintf("apparmor=%s", config.DINDAppArmor)}
 	}
 
 	if config.ExternalDindVolumeSize != "" {
 		h.StorageOpt = map[string]string{"size": config.ExternalDindVolumeSize}
 	}
 
-	var pidsLimit = int64(1000)
-	if envLimit := os.Getenv("MAX_PROCESSES"); envLimit != "" {
-		if i, err := strconv.Atoi(envLimit); err == nil {
-			pidsLimit = int64(i)
-		}
-	}
+	var pidsLimit = config.DefaultMaxPIDs
 	h.Resources.PidsLimit = &pidsLimit
 
 	memoryLimit := config.DefaultLimitMemory * Megabyte
@@ -360,7 +353,6 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	}
 
 	if cpuLimit > 0 {
-		// Convert CPUs to NanoCPUs (1 CPU = 1e9 nano CPUs)
 		h.Resources.NanoCPUs = int64(cpuLimit * 1e9)
 
 		numCPUs := int(cpuLimit)
@@ -407,6 +399,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 			},
 			Name: opts.ContainerName,
 		})
+
 		if err != nil {
 			return
 		}
@@ -429,21 +422,14 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		h.Binds = append(h.Binds, fmt.Sprintf("%s:/data", opts.UserVolume))
 	}
 
-	container, err := d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
-
+	err = d.pullImage(context.Background(), opts.Image)
 	if err != nil {
-		//if client.IsErrImageNotFound(err) {
-		//  log.Printf("Unable to find image '%s' locally\n", opts.Image)
-		//  if err = d.pullImage(context.Background(), opts.Image); err != nil {
-		//    return "", err
-		//  }
-		//  container, err = d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
-		//  if err != nil {
-		//    return "", err
-		//  }
-		//} else {
 		return err
-		//}
+	}
+
+	container, err := d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
+	if err != nil {
+		return err
 	}
 
 	// Connect remaining networks if there are any
@@ -459,9 +445,11 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	if err = d.copyIfSet(opts.ServerCert, "cert.pem", containerCertDir, opts.ContainerName); err != nil {
 		return
 	}
+
 	if err = d.copyIfSet(opts.ServerKey, "key.pem", containerCertDir, opts.ContainerName); err != nil {
 		return
 	}
+
 	if err = d.copyIfSet(opts.CACert, "ca.pem", containerCertDir, opts.ContainerName); err != nil {
 		return
 	}

@@ -27,7 +27,7 @@ var (
 var (
 	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain, L2SSHPort,
 	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
-	LetsEncryptCertsDir, DataDirHost, DataDirUser, AdminToken, SegmentId string
+	LetsEncryptCertsDir, DINDImage, DINDAppArmor, AdminToken, SegmentId string
 )
 
 var (
@@ -35,9 +35,10 @@ var (
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
 	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
-	DefaultDINDImage, ExternalDindVolumeSize                        string
+	ExternalDindVolumeSize, ExternalDataDir, ExternalDataDirHost    string
 	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg              float64
 	DefaultLimitMemory, DefaultMaxMemory                            int64
+	DefaultMaxPIDs                                                  int64
 	SecureCookie                                                    *securecookie.SecureCookie
 )
 
@@ -81,13 +82,15 @@ func ParseFlags() {
 	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
 	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
 
-	flag.StringVar(&DefaultDINDImage, "default-dind-image", GetEnvString("PWD_DEFAULT_DIND_IMAGE", "franela/dind:latest"), "Default Docker-in-Docker Image")
+	flag.StringVar(&DINDImage, "dind-image-name", GetEnvString("PWD_DIND_IMAGE_NAME", "franela/dind:latest"), "Docker-in-Docker (DIND) Image Name")
+	flag.StringVar(&DINDAppArmor, "dind-apparmor-profile", GetEnvString("PWD_DIND_APPARMOR_PROFILE", ""), "Docker-in-Docker (DIND) AppArmor Profile Name")
 
 	flag.Float64Var(&DefaultLimitCPUCore, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
 	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 2048), "Default Resource Limit for Memory")
 
 	flag.Float64Var(&DefaultMaxCPUCore, "default-max-cpu", GetEnvFloat64("PWD_DEFAULT_MAX_CPU", 4.0), "Default Maximum Limit for CPU Core")
 	flag.Int64Var(&DefaultMaxMemory, "default-max-memory", GetEnvInt64("PWD_DEFAULT_MAX_MEMORY", 8192), "Default Maximum Limit for Memory")
+	flag.Int64Var(&DefaultMaxPIDs, "default-max-process", GetEnvInt64("PWD_DEFAULT_MAX_PROCESS", 1000), "Default Maximum Limit for Processes")
 
 	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
 
@@ -105,8 +108,7 @@ func ParseFlags() {
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DIND External Volume Through XFS Volume Driver")
 	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
-
-	flag.StringVar(&DataDirUser, "data-dir", GetEnvString("PWD_DATA_DIR", "./data"), "Data Directory Inside Container to Store User Persistent Data")
+	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "./data"), "DIND External Data Directory to Store Persistent Data in /data Path")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")
@@ -114,7 +116,7 @@ func ParseFlags() {
 	flag.BoolVar(&Unsafe, "unsafe-mode", GetEnvBool("PWD_UNSAFE_MODE", false), "Operate in UnSafe Mode")
 	flag.Parse()
 
-	DataDirHost = GetEnvString("PWD_DATA_DIR_HOST", DataDirUser)
+	ExternalDataDirHost = GetEnvString("PWD_DOCKER_HOST_DATA_DIR", ExternalDataDir)
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
 }
