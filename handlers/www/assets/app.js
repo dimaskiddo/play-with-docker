@@ -31,13 +31,14 @@
     $scope.connected = false;
     $scope.type = { windows: false };
     $scope.isInstanceBeingCreated = false;
-    $scope.newInstanceBtnText = '+ Add new instance';
+    $scope.newInstanceBtnText = '+ Add New Instance';
     $scope.deleteInstanceBtnText = 'Delete';
     $scope.isInstanceBeingDeleted = false;
     $scope.uploadProgress = 0;
 
     $scope.uploadFiles = function (files, invalidFiles) {
       let total = files.length;
+
       let uploadFile = function () {
         let file = files.shift();
         if (!file) {
@@ -45,6 +46,7 @@
           $scope.uploadProgress = 0;
           return
         }
+  
         $scope.uploadMessage = "Uploading file(s) " + (total - files.length) + "/" + total + " : " + file.name;
         let upload = Upload.upload({ url: '/sessions/' + $scope.sessionId + '/instances/' + $rootScope.selectedInstance.name + '/uploads', data: { file: file }, method: 'POST' })
           .then(function () { }, function () { }, function (evt) {
@@ -56,6 +58,29 @@
 
       uploadFile();
     }
+
+    $scope.downloadKey = function(instance) {
+      $http({
+        method: 'GET',
+        url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name + '/download-key',
+        withCredentials: true,
+        responseType: 'arraybuffer'
+      }).then(function(response) {
+        var blob = new Blob([response], {type: 'application/octet-stream'});
+        var downloadUrl = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        
+        a.href = downloadUrl;
+        a.download = 'keyfile_' + $scope.sessionId + '_' + instance.hoatname + '.pem';
+        a.style.display = 'none';
+
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(downloadUrl);
+      });
+    };
 
     var selectedKeyboardShortcuts = KeyboardShortcutService.getCurrentShortcuts();
 
@@ -75,7 +100,6 @@
     $scope.$on("settings:shortcutsSelected", function (e, preset) {
       selectedKeyboardShortcuts = preset;
     });
-
 
     $scope.showAlert = function (title, content, parent, cb) {
       $mdDialog.show(
@@ -455,16 +479,25 @@
     }
 
     $scope.deleteInstance = function (instance) {
-      updateDeleteInstanceBtnState(true);
-      $http({
-        method: 'DELETE',
-        url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name,
-      }).then(function (response) {
-        $scope.removeInstance(instance.name);
-      }, function (response) {
-        console.log('error', response);
-      }).finally(function () {
-        updateDeleteInstanceBtnState(false);
+      var confirm = $mdDialog.confirm()
+        .title('Delete Instance')
+        .textContent('Are you sure you want to delete instance ' + instance.hostname + ' (' + instance.ip + ')?')
+        .ariaLabel('Delete Instance')
+        .ok('Delete')
+        .cancel('Cancel');
+
+      $mdDialog.show(confirm).then(function() {
+        updateDeleteInstanceBtnState(true);
+        $http({
+          method: 'DELETE',
+          url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name,
+        }).then(function(response) {
+          $scope.removeInstance(instance.name);
+        }, function(response) {
+          console.log('error', response);
+        }).finally(function() {
+          updateDeleteInstanceBtnState(false);
+        });
       });
     };
 

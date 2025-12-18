@@ -13,24 +13,29 @@ import (
 
 func (p *pwd) InstanceResizeTerminal(instance *types.Instance, rows, cols uint) error {
 	defer observeAction("InstanceResizeTerminal", time.Now())
+
 	prov, err := p.getProvisioner(instance.Type)
 	if err != nil {
 		return err
 	}
+
 	return prov.InstanceResizeTerminal(instance, rows, cols)
 }
 
 func (p *pwd) InstanceGetTerminal(instance *types.Instance) (net.Conn, error) {
 	defer observeAction("InstanceGetTerminal", time.Now())
+
 	prov, err := p.getProvisioner(instance.Type)
 	if err != nil {
 		return nil, err
 	}
+
 	return prov.InstanceGetTerminal(instance)
 }
 
 func (p *pwd) InstanceUploadFromUrl(instance *types.Instance, fileName, dest string, url string) error {
 	defer observeAction("InstanceUploadFromUrl", time.Now())
+
 	prov, err := p.getProvisioner(instance.Type)
 	if err != nil {
 		return err
@@ -52,21 +57,25 @@ func (p *pwd) InstanceUploadFromReader(instance *types.Instance, fileName, dest 
 
 func (p *pwd) InstanceGet(session *types.Session, name string) *types.Instance {
 	defer observeAction("InstanceGet", time.Now())
+
 	instance, err := p.storage.InstanceGet(name)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
+
 	return instance
 }
 
 func (p *pwd) InstanceFindBySession(session *types.Session) ([]*types.Instance, error) {
 	defer observeAction("InstanceFindBySession", time.Now())
+
 	instances, err := p.storage.InstanceFindBySessionId(session.Id)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+
 	return instances, nil
 }
 

@@ -90,6 +90,7 @@ func Register(extend HandlerExtender) {
 	corsRouter.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/exec", Exec).Methods("POST")
 	corsRouter.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/fstree", fsTree).Methods("GET")
 	corsRouter.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/file", file).Methods("GET")
+	corsRouter.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/download-key", fileDownloadKey).Methods("GET")
 
 	r.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/editor", func(rw http.ResponseWriter, r *http.Request) {
 		serveAsset(rw, r, "editor.html")

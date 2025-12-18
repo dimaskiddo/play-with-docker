@@ -20,8 +20,8 @@ cd play-with-docker
 # Verify the Docker daemon is running
 docker run hello-world
 
-# Load the IPVS kernel module. Because swarms are created in dind,
-# the daemon won't load it automatically
+# Load the IPVS kernel module.
+# Because swarms are created in dind,the daemon won't load it automatically
 sudo modprobe xt_ipvs
 
 # Ensure the Docker daemon is running in swarm mode
@@ -39,12 +39,11 @@ to create a new session, followed by "ADD NEW INSTANCE" to launch a new terminal
 
 Notes:
 
-* There is a hard-coded limit of 5 Docker playgrounds per session. After 4 hours sessions are deleted.
-* If you want to override the DIND version or image then set the environmental variable `PWD_DEFAULT_DIND_IMAGE=franela/dind:latest` [franela](https://hub.docker.com/r/franela/).
+* If you want to override the DIND version or image then set the environmental variable `PWD_DIND_IMAGE_NAME=franela/dind:latest` [franela](https://hub.docker.com/r/franela/).
 
 ### Port Forwarding
 
-In order for port forwarding to work correctly in development you need to make `*.localhost` to resolve to `127.0.0.1`. That way when you try to access `pwd10-0-0-1-8080.host1.localhost`, then you're forwarded correctly to your local PWD server.
+In order for port forwarding to work correctly in development you need to make `*.localhost` to resolve to `127.0.0.1`. That way when you try to access `ip-10-0-0-1-8080.apps.localhost`, then you're forwarded correctly to your local PWD server.
 
 You can achieve this by setting up a `dnsmasq` server (you can run it in a docker container also) and adding the following configuration:
 
@@ -59,7 +58,7 @@ Don't forget to change your computer's default DNS to use the dnsmasq server to 
 
 ### How Can I Connect to a Published Port from The Outside World?
 
-If you need to access your services from outside, use the following URL pattern `http://ip<hyphen-ip>-<session_jd>-<port>.<l2-subdomain>.<domain>` (i.e: http://ip10-10-10-10-b8ir6vbg5vr00095iil0-8080.apps.docker.dimaskiddo.my.id).
+If you need to access your services from outside, use the following URL pattern `http://ip-<hyphen-ip>-<session>-<port>.<l2-subdomain>.<domain>` (i.e: http://ip-10-0-0-1-b8ir6vbg-8080.apps.docker.dimaskiddo.my.id).
 
 ### Why is Play With Docker Running in Ports 80 and 443? Can I Change That?
 

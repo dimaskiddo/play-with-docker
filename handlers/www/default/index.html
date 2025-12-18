@@ -37,18 +37,7 @@
             <md-button class="md-warn md-raised" ng-click="closeSession()">Close Session</md-button>
             <div class="md-toolbar-tools">
               <h1 class="md-toolbar-tools">Instances</h1>
-              <!--
-              <templates-icon></templates-icon>
-              <settings-icon></settings-icon>
-              -->
             </div>
-            <!--
-            <div class="md-toolbar-tools" ng-if="playground.allow_windows_instances">
-              <md-switch ng-model="type.windows">
-                Windows Containers {{windows}}
-              </md-switch>
-            </div>
-            -->
           </md-toolbar>
           <md-content layout-padding>
             <md-button ng-click="newInstance()" ng-disabled="isInstanceBeingCreated" class="md-primary">{{newInstanceBtnText}}</md-button>
@@ -60,6 +49,10 @@
                   <h3>{{instance.ip}}</h3>
                   <h4>{{instance.hostname}}</h4>
                 </div>
+                <md-button class="md-icon-button md-warn" ng-click="deleteInstance(instance)" ng-disabled="isInstanceBeingDeleted" aria-label="Delete Instance">
+                  <md-icon class="material-icons">delete</md-icon>
+                  <md-tooltip md-direction="left">Delete Instance</md-tooltip>
+                </md-button>
                 <md-divider ng-if="!$last"></md-divider>
               </md-list-item>
             </md-list>
@@ -101,30 +94,33 @@
               </div>
               <div layout-gt-sm="row">
                 <md-input-container class="md-block" flex-gt-sm>
-                  <label>Memory</label>
-                  <input ng-model="instance.mem" type="text" readonly="readonly">
-                </md-input-container>
-                <md-input-container class="md-block" flex-gt-sm>
                   <label>CPU</label>
                   <input ng-model="instance.cpu" type="text" readonly="readonly">
+                </md-input-container>
+                <md-input-container class="md-block" flex-gt-sm>
+                  <label>Memory</label>
+                  <input ng-model="instance.mem" type="text" readonly="readonly">
                 </md-input-container>
               </div>
               <div layout-gt-sm="row">
                 <md-input-container>
                   <label>SSH</label>
-                  <input value="ssh -i id_rsa {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="50">
-                  <md-icon ngclipboard data-clipboard-text="ssh -i id_rsa {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
+                  <input value="ssh -i keyfile_{{instance.hostname}}_{{id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="80">
+                  <md-icon ngclipboard data-clipboard-text="ssh -i keyfile_{{instance.hostname}}_{{id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
                     <md-tooltip md-direction="top">Copy!</md-tooltip>
                   </md-icon>
+                  <md-button class="md-raised" ng-click="downloadKey(instance)">
+                    <md-icon class="material-icons">vpn_key</md-icon> Download SSH Key
+                  </md-button>
                 </md-input-container>
                 <div class="md-block" glex-gt-sm></div>
               </div>
             </md-card-content>
             <md-card-actions>
-              <md-button class="md-warn md-raised" ng-click="deleteInstance(instance)" ng-disabled="isInstanceBeingDeleted">{{deleteInstanceBtnText}}</md-button>
               <md-button class="md-raised" ng-click="openEditor(instance)">
-                <md-icon class="material-icons">insert_drive_file</md-icon> Editor
+                <md-icon class="material-icons">insert_drive_file</md-icon> File Editor
               </md-button>
+              <settings-icon></settings-icon>
             </md-card-actions>
           </md-card>
           <md-card flex md-theme="default" md-theme-watch >
@@ -172,49 +168,6 @@
         </md-dialog>
       </div>
     </div>
-    <script type="text/ng-template" id="templates-modal.html">
-      <md-toolbar>
-        <div class="md-toolbar-tools">
-          <h2>Templates</h2>
-          <span flex></span>
-          <md-button class="md-icon-button" ng-click="$ctrl.close()">
-            <md-icon class="material-icon" aria-label="Close dialog">close</md-icon>
-          </md-button>
-        </div>
-      </md-toolbar>
-      <md-dialog-content>
-        <div class="md-dialog-content" style="width:600px;">
-          <div layout="row" layout-sm="column" layout-align="space-around" ng-if="building">
-            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-          </div>
-          <div layout="row" ng-if="errorMessage">
-            <div flex="100" style="margin-top: 20px; text-align:center; font-weight: bold; color: red;">
-              {{errorMessage}}
-            </div>
-          </div>
-          <md-list flex ng-if="!building">
-            <md-list-item class="md-3-line" ng-repeat="template in templates" ng-click="$ctrl.setupSession(template.setup)">
-              <md-card md-theme="default" md-theme-watch>
-                <md-card-title>
-                  <md-card-title-text>
-                    <span class="md-headline">{{template.title}}</span>
-                  </md-card-title-text>
-                  <md-card-title-media>
-                    <div class="md-media-sm card-media"><img ng-src="{{template.icon}}" style="height: 75px;" class="md-card-image"></div>
-                  </md-card-title-media>
-                </md-card-title>
-              </md-card>
-            </md-list-item>
-          </md-list>
-        </div>
-      </md-dialog-content>
-      <md-dialog-actions layout="row">
-        <span flex></span>
-        <md-button ng-click="$ctrl.close()">
-          Close
-        </md-button>
-      </md-dialog-actions>
-    </script>
     <script type="text/ng-template" id="settings-modal.html">
       <md-toolbar>
         <div class="md-toolbar-tools">

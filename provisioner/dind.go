@@ -80,7 +80,10 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		networks = append(networks, conf.Networks...)
 	}
 
-	containerName := fmt.Sprintf("%s_%s", session.Id[:8], d.generator.NewId())
+	containerId := d.generator.NewId()
+	containerId = containerId[:len(containerId)-8]
+
+	containerName := fmt.Sprintf("%s-%s", session.Id, containerId)
 
 	dockerClient, err := d.factory.GetForSession(session)
 	if err != nil {

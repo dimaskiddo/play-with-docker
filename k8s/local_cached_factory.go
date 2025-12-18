@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
 	"github.com/dimaskiddo/play-with-docker/storage"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,7 @@ func (f *localCachedFactory) GetForInstance(instance *types.Instance) (*kubernet
 	defer c.rw.Unlock()
 
 	if c.client == nil {
-		kc, err := NewClient(instance, "l2:443")
+		kc, err := NewClient(instance, fmt.Sprintf("%s:443", config.L2ContainerName))
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +78,7 @@ func (f *localCachedFactory) GetKubeletForInstance(instance *types.Instance) (*K
 	defer c.rw.Unlock()
 
 	if c.kubeletClient == nil {
-		kc, err := NewKubeletClient(instance, "l2:443")
+		kc, err := NewKubeletClient(instance, fmt.Sprintf("%s:443", config.L2ContainerName))
 		if err != nil {
 			return nil, err
 		}
