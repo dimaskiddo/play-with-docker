@@ -109,7 +109,6 @@ func (d *windows) InstanceDelete(session *types.Session, instance *types.Instanc
 		return err
 	}
 
-	// return error and don't do anything else
 	if _, err := ec2Service.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{aws.String(instance.WindowsId)}}); err != nil {
 		return err
 	}
@@ -210,12 +209,10 @@ func (d *windows) releaseInstance(instanceId string) error {
 func (d *windows) InstanceResizeTerminal(instance *types.Instance, rows, cols uint) error {
 	resp, err := http.Post(fmt.Sprintf("http://%s:222/terminals/1/size?cols=%d&rows=%d", instance.IP, cols, rows), "application/json", nil)
 	if err != nil {
-		// Don't log errors for instances that might not be ready yet
 		return nil
 	}
 
 	if resp.StatusCode != 200 {
-		// Don't log errors for instances that might not be ready yet
 		return nil
 	}
 
@@ -283,6 +280,16 @@ func (d *windows) InstanceUploadFromReader(instance *types.Instance, fileName, d
 	return nil
 }
 
+func (d *windows) GetUserVolumePath(session *types.Session) (string, error) {
+	// TODO Implement
+	return "", nil
+}
+
+func (d *windows) DeleteUserVolumePath(session *types.Session) error {
+	// TODO Implement
+	return nil
+}
+
 func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error) {
 	input := &autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{aws.String("pwd-windows")},
@@ -327,7 +334,7 @@ func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error
 	})
 
 	if err != nil {
-		// TODO Eetry x times and free the instance that was picked?
+		// TODO Retry x times and free the instance that was picked?
 		d.releaseInstance(avInstanceId)
 		return nil, err
 	}

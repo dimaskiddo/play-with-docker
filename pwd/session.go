@@ -137,6 +137,14 @@ func (p *pwd) SessionClose(s *types.Session) error {
 		return err
 	}
 
+	if err := p.dindProvisioner.DeleteUserVolumePath(s); err != nil {
+		log.Println(err)
+	}
+
+	if err := p.windowsProvisioner.DeleteUserVolumePath(s); err != nil {
+		log.Println(err)
+	}
+
 	if err := p.sessionProvisioner.SessionClose(s); err != nil {
 		log.Println(err)
 		return err

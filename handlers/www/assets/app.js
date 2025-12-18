@@ -134,13 +134,11 @@
         withCredentials: true
       }).then(function(response) {
         $scope.currentUser = null;
-
         setTimeout(function() {
           $window.location.href = '/';
         }, 100);
       }, function(error) {
         $scope.currentUser = null;
-
         setTimeout(function() {
           $window.location.href = '/';
         }, 100);
@@ -149,6 +147,7 @@
 
     $scope.upsertInstance = function (info) {
       var i = info;
+
       if (!$scope.idx[i.name]) {
         $rootScope.instances.push(i);
         i.buffer = '';
@@ -203,7 +202,6 @@
       }).then(function (response) {
         $scope.playground = response.data;
       });
-
     }
 
     $scope.getSession = function (sessionId) {
@@ -215,6 +213,7 @@
 
         if (response.data.created_at) {
           $scope.expiresAt = moment(response.data.expires_at);
+
           setInterval(function () {
             $scope.ttl = moment.utc($scope.expiresAt.diff(moment())).format('HH:mm:ss');
             $scope.$apply();
@@ -224,6 +223,7 @@
         var i = response.data;
         for (var k in i.instances) {
           var instance = i.instances[k];
+
           $rootScope.instances.push(instance);
           $scope.idx[instance.name] = instance;
           $scope.idxByHostname[instance.hostname] = instance;
@@ -248,15 +248,18 @@
           if (!socket.listeners[name]) {
             socket.listeners[name] = [];
           }
+
           socket.listeners[name].push(cb);
         }
 
         socket.emit = function () {
           var name = arguments[0]
           var args = [];
+
           for (var i = 1; i < arguments.length; i++) {
             args.push(arguments[i]);
           }
+
           socket.send(JSON.stringify({ name: name, args: args }));
         }
 
@@ -282,6 +285,7 @@
 
         socket.addEventListener('message', function (event) {
           var m = JSON.parse(event.data);
+
           var ls = socket.listeners[m.name];
           if (ls) {
             for (var i = 0; i < ls.length; i++) {
@@ -316,6 +320,7 @@
             $scope.upsertInstance({ name: name });
             instance = $scope.idx[name];
           }
+
           if (!instance.term) {
             instance.buffer += data;
           } else {
@@ -325,8 +330,23 @@
 
         socket.on('session end', function () {
           $scope.showAlert('Session timed out!', 'Your session has expired and all of your instances have been deleted.', '#sessionEnd', function () {
-            window.location.href = '/';
+            $http({
+              method: 'POST',
+              url: '/sessions/' + $scope.sessionId + '/close',
+              withCredentials: true
+            }).then(function(response) {
+              $scope.currentUser = null;
+              setTimeout(function() {
+                $window.location.href = '/';
+              }, 100);
+            }, function(error) {
+              $scope.currentUser = null;
+              setTimeout(function() {
+                $window.location.href = '/';
+              }, 100);
+            });
           });
+
           $scope.isAlive = false;
           socket.close();
         });
@@ -347,6 +367,7 @@
           if (cols == 0 || rows == 0) {
             return
           }
+
           $rootScope.instances.forEach(function (instance) {
             if (instance.term) {
               instance.term.resize(cols, rows);
@@ -362,8 +383,10 @@
           if (!$scope.idx[stats.instance]) {
             return
           }
+
           $scope.idx[stats.instance].mem = stats.mem;
           $scope.idx[stats.instance].cpu = stats.cpu;
+
           $scope.$apply();
         });
 
@@ -371,6 +394,7 @@
           if (!$scope.idx[status.instance]) {
             return
           }
+
           if (status.is_manager) {
             $scope.idx[status.instance].isManager = true
           } else if (status.is_worker) {
@@ -378,6 +402,7 @@
           } else {
             $scope.idx[status.instance].isManager = null
           }
+
           $scope.$apply();
         });
 
@@ -385,6 +410,7 @@
           if (!$scope.idx[status.instance]) {
             return
           }
+
           if (status.is_manager) {
             $scope.idx[status.instance].isK8sManager = true
           } else if (status.is_worker) {
@@ -392,6 +418,7 @@
           } else {
             $scope.idx[status.instance].isK8sManager = null
           }
+
           $scope.$apply();
         });
 
@@ -415,12 +442,10 @@
 
         $scope.socket = socket;
 
-        // If instance is passed in URL, select it
         let inst = $scope.idx[$location.hash()];
         if (inst) {
           $scope.showInstance(inst);
         } else if ($rootScope.instances.length > 0) {
-          // if no instance has been passed, select the first.
           $scope.showInstance($rootScope.instances[0]);
         }
       }, function (response) {

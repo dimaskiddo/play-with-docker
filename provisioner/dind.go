@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -368,6 +369,20 @@ func (d *DinD) GetUserVolumePath(session *types.Session) (string, error) {
 	log.Printf("Get Host bind mount path for user %s: %s\n", session.Id, path)
 
 	return path, nil
+}
+
+func (d *DinD) DeleteUserVolumePath(session *types.Session) error {
+	volpath, err := AbsUserVolumePath(session)
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(volpath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func AbsUserVolumePath(session *types.Session) (string, error) {
