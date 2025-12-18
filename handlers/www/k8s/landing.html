@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" ng-app="PWDLanding" ng-controller="LoginController">
   <head>
     <meta charset="utf-8"/>
@@ -75,6 +75,23 @@
         $scope.loggedIn = false;
         $scope.user = null;
 
+        $http({
+          method: "GET",
+          url: "/oauth/providers",
+        }).then(
+          function (response) {
+            $scope.providers = response.data;
+            if ($scope.providers.length == 0) {
+              $scope.loggedIn = true;
+            } else {
+              checkLoggedIn();
+            }
+          },
+          function (response) {
+            console.log("ERROR", response);
+          },
+        );
+
         function checkLoggedIn() {
           $http({
             method: "GET",
@@ -90,23 +107,6 @@
             },
           );
         }
-
-        checkLoggedIn();
-
-        $http({
-          method: "GET",
-          url: "/oauth/providers",
-        }).then(
-          function (response) {
-            $scope.providers = response.data;
-            if ($scope.providers.length == 0) {
-              $scope.loggedIn = true;
-            }
-          },
-          function (response) {
-            console.log("ERROR", response);
-          },
-        );
 
         $scope.login = function (provider) {
           var width = screen.width * 0.6;

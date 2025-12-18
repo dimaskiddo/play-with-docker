@@ -93,7 +93,9 @@
     }
 
     $scope.resize = function (geometry) {
-      $scope.socket.emit('instance viewport resize', geometry.cols, geometry.rows);
+      if ($scope.socket && $scope.socket.c && $scope.socket.c.readyState === WebSocket.OPEN) {
+        $scope.socket.emit('instance viewport resize', geometry.cols, geometry.rows);
+      }
     }
 
     KeyboardShortcutService.setResizeFunc($scope.resize);

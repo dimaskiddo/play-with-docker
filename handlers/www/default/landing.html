@@ -72,22 +72,6 @@
         $scope.loggedIn = false;
         $scope.user = null;
 
-        function checkLoggedIn() {
-          $http({
-            method: 'GET',
-            url: '/users/me'
-          }).then(function(response) {
-            $scope.user = response.data;
-            $scope.loggedIn = true;
-          }, function(response) {
-            console.log('ERROR', response);
-            $scope.user = null;
-            $scope.loggedIn = false;
-          });
-        }
-
-        checkLoggedIn();
-
         $http({
           method: 'GET',
           url: '/oauth/providers'
@@ -95,10 +79,26 @@
           $scope.providers = response.data;
           if ($scope.providers.length == 0) {
             $scope.loggedIn = true;
+          } else {
+            checkLoggedIn();
           }
-        }, function(response) {
-          console.log('ERROR', response);
+        }, function(error) {
+          console.log('ERROR', error);
         });
+
+        function checkLoggedIn() {
+          $http({
+            method: 'GET',
+            url: '/users/me'
+          }).then(function(response) {
+            $scope.user = response.data;
+            $scope.loggedIn = true;
+          }, function(error) {
+            console.log('ERROR', error);
+            $scope.user = null;
+            $scope.loggedIn = false;
+          });
+        }
 
         $scope.login = function(provider) {
           var width = screen.width * 0.6;

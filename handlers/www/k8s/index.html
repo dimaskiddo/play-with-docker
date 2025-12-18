@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" ng-app="DockerPlay" ng-controller="PlayController">
   <head>
     <meta charset="utf-8"/>
@@ -37,13 +37,17 @@
             <md-button class="md-warn md-raised" ng-click="closeSession()">Close Session</md-button>
             <div class="md-toolbar-tools">
               <h1 class="md-toolbar-tools">Instances</h1>
-              <settings-icon></settings-icon><br/>
+              <!--
+              <settings-icon></settings-icon>
+              -->
             </div>
+            <!--
             <div class="md-toolbar-tools" ng-if="playground.allow_windows_instances">
               <md-switch ng-model="type.windows">
                 Windows Containers {{windows}}
               </md-switch>
             </div>
+            -->
           </md-toolbar>
           <md-content layout-padding>
             <md-button ng-click="newInstance()" ng-disabled="isInstanceBeingCreated" class="md-primary">{{newInstanceBtnText}}</md-button>

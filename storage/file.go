@@ -29,6 +29,61 @@ type DB struct {
 	UsersByProvider             map[string]string                 `json:"users_by_providers"`
 }
 
+func NewFileStorage(path string) (StorageApi, error) {
+	s := &storage{path: path}
+
+	err := s.load()
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (store *storage) load() error {
+	file, err := os.Open(store.path)
+
+	if err == nil {
+		decoder := json.NewDecoder(file)
+		err = decoder.Decode(&store.db)
+
+		if err != nil {
+			return err
+		}
+	} else {
+		store.db = &DB{
+			Sessions:                    map[string]*types.Session{},
+			Instances:                   map[string]*types.Instance{},
+			Clients:                     map[string]*types.Client{},
+			WindowsInstances:            map[string]*types.WindowsInstance{},
+			LoginRequests:               map[string]*types.LoginRequest{},
+			Users:                       map[string]*types.User{},
+			Playgrounds:                 map[string]*types.Playground{},
+			WindowsInstancesBySessionId: map[string][]string{},
+			InstancesBySessionId:        map[string][]string{},
+			ClientsBySessionId:          map[string][]string{},
+			UsersByProvider:             map[string]string{},
+		}
+	}
+
+	file.Close()
+
+	return nil
+}
+
+func (store *storage) save() error {
+	file, err := os.Create(store.path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(&store.db)
+
+	return err
+}
+
 func (store *storage) SessionGet(id string) (*types.Session, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -113,6 +168,20 @@ func (store *storage) InstanceGet(name string) (*types.Instance, error) {
 	return i, nil
 }
 
+func (store *storage) InstanceFindBySessionId(sessionId string) ([]*types.Instance, error) {
+	store.rw.Lock()
+	defer store.rw.Unlock()
+
+	instanceIds := store.db.InstancesBySessionId[sessionId]
+	instances := make([]*types.Instance, len(instanceIds))
+
+	for i, id := range instanceIds {
+		instances[i] = store.db.Instances[id]
+	}
+
+	return instances, nil
+}
+
 func (store *storage) InstancePut(instance *types.Instance) error {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -167,20 +236,6 @@ func (store *storage) InstanceCount() (int, error) {
 	defer store.rw.Unlock()
 
 	return len(store.db.Instances), nil
-}
-
-func (store *storage) InstanceFindBySessionId(sessionId string) ([]*types.Instance, error) {
-	store.rw.Lock()
-	defer store.rw.Unlock()
-
-	instanceIds := store.db.InstancesBySessionId[sessionId]
-	instances := make([]*types.Instance, len(instanceIds))
-
-	for i, id := range instanceIds {
-		instances[i] = store.db.Instances[id]
-	}
-
-	return instances, nil
 }
 
 func (store *storage) WindowsInstanceGetAll() ([]*types.WindowsInstance, error) {
@@ -256,6 +311,21 @@ func (store *storage) ClientGet(id string) (*types.Client, error) {
 
 	return i, nil
 }
+
+func (store *storage) ClientFindBySessionId(sessionId string) ([]*types.Client, error) {
+	store.rw.Lock()
+	defer store.rw.Unlock()
+
+	clientIds := store.db.ClientsBySessionId[sessionId]
+	clients := make([]*types.Client, len(clientIds))
+
+	for i, id := range clientIds {
+		clients[i] = store.db.Clients[id]
+	}
+
+	return clients, nil
+}
+
 func (store *storage) ClientPut(client *types.Client) error {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -312,28 +382,6 @@ func (store *storage) ClientCount() (int, error) {
 	return len(store.db.Clients), nil
 }
 
-func (store *storage) ClientFindBySessionId(sessionId string) ([]*types.Client, error) {
-	store.rw.Lock()
-	defer store.rw.Unlock()
-
-	clientIds := store.db.ClientsBySessionId[sessionId]
-	clients := make([]*types.Client, len(clientIds))
-
-	for i, id := range clientIds {
-		clients[i] = store.db.Clients[id]
-	}
-
-	return clients, nil
-}
-
-func (store *storage) LoginRequestPut(loginRequest *types.LoginRequest) error {
-	store.rw.Lock()
-	defer store.rw.Unlock()
-
-	store.db.LoginRequests[loginRequest.Id] = loginRequest
-	return store.save()
-}
-
 func (store *storage) LoginRequestGet(id string) (*types.LoginRequest, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -345,12 +393,31 @@ func (store *storage) LoginRequestGet(id string) (*types.LoginRequest, error) {
 	}
 }
 
+func (store *storage) LoginRequestPut(loginRequest *types.LoginRequest) error {
+	store.rw.Lock()
+	defer store.rw.Unlock()
+
+	store.db.LoginRequests[loginRequest.Id] = loginRequest
+	return store.save()
+}
+
 func (store *storage) LoginRequestDelete(id string) error {
 	store.rw.Lock()
 	defer store.rw.Unlock()
 
 	delete(store.db.LoginRequests, id)
 	return store.save()
+}
+
+func (store *storage) UserGet(id string) (*types.User, error) {
+	store.rw.Lock()
+	defer store.rw.Unlock()
+
+	if user, found := store.db.Users[id]; !found {
+		return nil, NotFoundError
+	} else {
+		return user, nil
+	}
 }
 
 func (store *storage) UserFindByProvider(providerName, providerUserId string) (*types.User, error) {
@@ -378,26 +445,6 @@ func (store *storage) UserPut(user *types.User) error {
 	return store.save()
 }
 
-func (store *storage) UserGet(id string) (*types.User, error) {
-	store.rw.Lock()
-	defer store.rw.Unlock()
-
-	if user, found := store.db.Users[id]; !found {
-		return nil, NotFoundError
-	} else {
-		return user, nil
-	}
-}
-
-func (store *storage) PlaygroundPut(playground *types.Playground) error {
-	store.rw.Lock()
-	defer store.rw.Unlock()
-
-	store.db.Playgrounds[playground.Id] = playground
-
-	return store.save()
-}
-
 func (store *storage) PlaygroundGet(id string) (*types.Playground, error) {
 	store.rw.Lock()
 	defer store.rw.Unlock()
@@ -408,37 +455,6 @@ func (store *storage) PlaygroundGet(id string) (*types.Playground, error) {
 	}
 
 	return playground, nil
-}
-
-func (store *storage) load() error {
-	file, err := os.Open(store.path)
-
-	if err == nil {
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&store.db)
-
-		if err != nil {
-			return err
-		}
-	} else {
-		store.db = &DB{
-			Sessions:                    map[string]*types.Session{},
-			Instances:                   map[string]*types.Instance{},
-			Clients:                     map[string]*types.Client{},
-			WindowsInstances:            map[string]*types.WindowsInstance{},
-			LoginRequests:               map[string]*types.LoginRequest{},
-			Users:                       map[string]*types.User{},
-			Playgrounds:                 map[string]*types.Playground{},
-			WindowsInstancesBySessionId: map[string][]string{},
-			InstancesBySessionId:        map[string][]string{},
-			ClientsBySessionId:          map[string][]string{},
-			UsersByProvider:             map[string]string{},
-		}
-	}
-
-	file.Close()
-
-	return nil
 }
 
 func (store *storage) PlaygroundGetAll() ([]*types.Playground, error) {
@@ -455,26 +471,11 @@ func (store *storage) PlaygroundGetAll() ([]*types.Playground, error) {
 	return playgrounds, nil
 }
 
-func (store *storage) save() error {
-	file, err := os.Create(store.path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func (store *storage) PlaygroundPut(playground *types.Playground) error {
+	store.rw.Lock()
+	defer store.rw.Unlock()
 
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(&store.db)
+	store.db.Playgrounds[playground.Id] = playground
 
-	return err
-}
-
-func NewFileStorage(path string) (StorageApi, error) {
-	s := &storage{path: path}
-
-	err := s.load()
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return store.save()
 }
