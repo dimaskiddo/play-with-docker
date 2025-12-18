@@ -50,6 +50,8 @@ services:
       - "443:443"
     env_file:
       - .env
+    environment:
+      - PWD_SESSION_FILE=./sessions/network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - data:/usr/app/play-with-docker/data

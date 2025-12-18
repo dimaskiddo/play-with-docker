@@ -91,6 +91,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 	userVolumePath, err := d.getUserVolumePath(session)
 	if err != nil {
 		log.Printf("Error getting user data directory: %v\n", err)
+
 		// Continue without volume on error
 		userVolumePath = ""
 	}
@@ -108,8 +109,10 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		Networks:       networks,
 		NetAliases:     []string{conf.Hostname},
 		DindVolumeSize: conf.DindVolumeSize,
-		Envs:           conf.Envs,
 		UserVolume:     userVolumePath,
+		LimitCPU:       conf.LimitCPU,
+		LimitMemory:    conf.LimitMemory,
+		Envs:           conf.Envs,
 	}
 
 	if err := dockerClient.ContainerCreate(opts); err != nil {
@@ -125,6 +128,8 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 	instance.Image = opts.Image
 	instance.IP = ips[session.Id]
 	instance.RoutableIP = instance.IP
+	instance.LimitCPU = conf.LimitCPU
+	instance.LimitMemory = conf.LimitMemory
 	instance.SessionId = session.Id
 	instance.Name = containerName
 	instance.Hostname = conf.Hostname
@@ -184,6 +189,20 @@ func (d *DinD) InstanceExec(instance *types.Instance, cmd []string) (int, error)
 	}
 
 	return dockerClient.Exec(instance.Name, cmd)
+}
+
+func (d *DinD) InstanceExecAttach(instance *types.Instance, cmd []string, out io.Writer) (int, error) {
+	session, err := d.getSession(instance.SessionId)
+	if err != nil {
+		return -1, err
+	}
+
+	dockerClient, err := d.factory.GetForSession(session)
+	if err != nil {
+		return -1, err
+	}
+
+	return dockerClient.ExecAttach(instance.Name, cmd, out)
 }
 
 func (d *DinD) InstanceFSTree(instance *types.Instance) (io.Reader, error) {

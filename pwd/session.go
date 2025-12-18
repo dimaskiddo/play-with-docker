@@ -83,10 +83,12 @@ func (p *pwd) SessionNew(ctx context.Context, config types.SessionConfig) (*type
 	if s.Stack != "" {
 		s.Ready = false
 	}
+
 	stackName := config.StackName
 	if stackName == "" {
 		stackName = "pwd"
 	}
+
 	s.StackName = stackName
 	s.ImageName = config.ImageName
 
@@ -112,17 +114,20 @@ func (p *pwd) SessionClose(s *types.Session) error {
 
 	log.Printf("Starting clean up of session [%s]\n", s.Id)
 	g, _ := errgroup.WithContext(context.Background())
+
 	instances, err := p.storage.InstanceFindBySessionId(s.Id)
 	if err != nil {
 		log.Printf("Could not find instances in session %s. Got %v\n", s.Id, err)
 		return err
 	}
+
 	for _, i := range instances {
 		i := i
 		g.Go(func() error {
 			return p.InstanceDelete(s, i)
 		})
 	}
+
 	err = g.Wait()
 	if err != nil {
 		log.Println(err)
@@ -142,6 +147,7 @@ func (p *pwd) SessionClose(s *types.Session) error {
 	log.Printf("Cleaned up session [%s]\n", s.Id)
 	p.setGauges()
 	p.event.Emit(event.SESSION_END, s.Id)
+
 	return nil
 }
 
@@ -153,10 +159,12 @@ func (p *pwd) SessionGetSmallestViewPort(sessionId string) types.ViewPort {
 		log.Printf("Error finding clients for session [%s]. Got: %v\n", sessionId, err)
 		return types.ViewPort{Rows: 24, Cols: 80}
 	}
+
 	if len(clients) == 0 {
 		log.Printf("Session [%s] doesn't have clients. Returning default viewport\n", sessionId)
 		return types.ViewPort{Rows: 24, Cols: 80}
 	}
+
 	var minRows uint
 	var minCols uint
 
@@ -188,6 +196,7 @@ func (p *pwd) SessionDeployStack(s *types.Session) error {
 
 	s.Ready = false
 	p.event.Emit(event.SESSION_READY, s.Id, false)
+
 	i, err := p.InstanceNew(s, types.InstanceConfig{ImageName: s.ImageName, PlaygroundFQDN: s.Host, DindVolumeSize: "5G", Privileged: true})
 	if err != nil {
 		log.Printf("Error creating instance for stack [%s]: %s\n", s.Stack, err)
@@ -226,10 +235,12 @@ func (p *pwd) SessionDeployStack(s *types.Session) error {
 
 	log.Printf("Stack execution finished with code %d\n", code)
 	s.Ready = true
+
 	p.event.Emit(event.SESSION_READY, s.Id, true)
 	if err := p.storage.SessionPut(s); err != nil {
 		return err
 	}
+
 	return nil
 }
 

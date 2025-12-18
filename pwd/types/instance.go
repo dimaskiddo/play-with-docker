@@ -8,6 +8,8 @@ type Instance struct {
 	Hostname    string          `json:"hostname" bson:"hostname"`
 	IP          string          `json:"ip" bson:"ip"`
 	RoutableIP  string          `json:"routable_ip" bson:"routable_id"`
+	LimitCPU    float64         `json:"limit_cpu" bson:"limit_cpu"`
+	LimitMemory int64           `json:"limit_memory" bson:"limit_memory"`
 	ServerCert  []byte          `json:"server_cert" bson:"server_cert"`
 	ServerKey   []byte          `json:"server_key" bson:"server_key"`
 	CACert      []byte          `json:"ca_cert" bson:"ca_cert"`
@@ -39,7 +41,9 @@ type InstanceConfig struct {
 	Tls            bool
 	PlaygroundFQDN string
 	Type           string
-	DindVolumeSize string
-	Envs           []string
 	Networks       []string
+	DindVolumeSize string
+	LimitCPU       float64
+	LimitMemory    int64
+	Envs           []string
 }

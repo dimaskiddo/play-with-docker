@@ -160,6 +160,40 @@ func (d *windows) InstanceExec(instance *types.Instance, cmd []string) (int, err
 	return ex.ExitCode, nil
 }
 
+func (d *windows) InstanceExecAttach(instance *types.Instance, cmd []string, out io.Writer) (int, error) {
+	execBody := struct {
+		Cmd []string `json:"cmd"`
+	}{Cmd: cmd}
+
+	b, err := json.Marshal(execBody)
+	if err != nil {
+		return -1, err
+	}
+
+	resp, err := http.Post(fmt.Sprintf("http://%s:222/exec", instance.IP), "application/json", bytes.NewReader(b))
+	if err != nil {
+		log.Println(err)
+		return -1, err
+	}
+
+	if resp.StatusCode != 200 {
+		log.Printf("Error exec on instance %s. Got %d\n", instance.Name, resp.StatusCode)
+		return -1, fmt.Errorf("Error exec on instance %s. Got %d\n", instance.Name, resp.StatusCode)
+	}
+
+	var ex execRes
+	err = json.NewDecoder(resp.Body).Decode(&ex)
+	if err != nil {
+		return -1, err
+	}
+
+	if out != nil && ex.Stdout != "" {
+		out.Write([]byte(ex.Stdout))
+	}
+
+	return ex.ExitCode, nil
+}
+
 func (d *windows) InstanceFSTree(instance *types.Instance) (io.Reader, error) {
 	// TODO Implement
 	return nil, nil
