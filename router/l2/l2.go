@@ -54,17 +54,18 @@ func director(protocol router.Protocol, host string) (*router.DirectorInfo, erro
 	if err != nil {
 		return nil, err
 	}
+
 	i.Dst = t
 	return &i, nil
 }
 
 func connectNetworks() error {
 	ctx := context.Background()
+
 	c, err := client.NewClientWithOpts()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer c.Close()
 
 	f, err := os.Open(config.SessionsFile)
@@ -95,7 +96,6 @@ func monitorNetworks() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer c.Close()
 
 	ctx := context.Background()
@@ -138,10 +138,12 @@ func main() {
 	if err != nil && !os.IsNotExist(err) {
 		log.Fatal("connect networks:", err)
 	}
+
 	go monitorNetworks()
 
 	ro := mux.NewRouter()
 	ro.HandleFunc("/ping", ping).Methods("GET")
+
 	n := negroni.Classic()
 	n.UseHandler(ro)
 
@@ -155,6 +157,7 @@ func main() {
 
 	r := router.NewRouter(director, config.SSHKeyPath)
 	r.ListenAndWait(":443", ":53", ":22")
+
 	defer r.Close()
 }
 

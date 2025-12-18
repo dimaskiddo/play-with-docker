@@ -116,8 +116,10 @@ func (r *proxyRouter) listen(wg *sync.WaitGroup, httpAddr, dnsAddr, sshAddr stri
 	if err != nil {
 		log.Fatal("failed to listen for connection: ", err)
 	}
+
 	r.sshListener = lssh
 	wg.Add(1)
+
 	go func() {
 		for {
 			nConn, err := lssh.Accept()
@@ -127,6 +129,7 @@ func (r *proxyRouter) listen(wg *sync.WaitGroup, httpAddr, dnsAddr, sshAddr stri
 
 			go r.sshHandle(nConn)
 		}
+
 		wg.Done()
 	}()
 }
@@ -200,6 +203,7 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 				} else {
 					newChannel.Reject(ssh.Prohibited, "remote server denied channel request")
 				}
+
 				continue
 			}
 
@@ -208,6 +212,7 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 				channel2.Close()
 				continue
 			}
+
 			go proxySsh(reqs, reqs2, channel, channel2)
 		}
 	}()
@@ -225,6 +230,7 @@ func (r *proxyRouter) sshHandle(nConn net.Conn) {
 			if req.Type == "auth-agent-req@openssh.com" {
 				continue
 			}
+
 			maskedReqs <- req
 		}
 	}()
@@ -499,6 +505,7 @@ func proxyConn(src, dst net.Conn) {
 
 	go cp(src, dst)
 	go cp(dst, src)
+
 	<-errc
 }
 

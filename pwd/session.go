@@ -95,7 +95,7 @@ func (p *pwd) SessionNew(ctx context.Context, config types.SessionConfig) (*type
 	s.StackName = stackName
 	s.ImageName = config.ImageName
 
-	log.Printf("NewSession id=[%s]\n", s.Id)
+	log.Printf("New session id [%s]\n", s.Id)
 	if err := p.sessionProvisioner.SessionNew(ctx, s); err != nil {
 		log.Println(err)
 		return nil, err
@@ -202,7 +202,6 @@ func (p *pwd) SessionDeployStack(s *types.Session) error {
 	defer observeAction("SessionDeployStack", time.Now())
 
 	if s.Ready {
-		// a stack was already deployed on this session, just ignore
 		return nil
 	}
 
@@ -281,6 +280,7 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 		log.Println(err)
 		return err
 	}
+
 	if len(instances) > 0 {
 		return sessionNotEmpty
 	}
@@ -299,6 +299,7 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 				DindVolumeSize: sconf.DindVolumeSize,
 				Privileged:     sconf.Privileged,
 			}
+
 			i, err := p.InstanceNew(session, instanceConf)
 			if err != nil {
 				return err
@@ -309,6 +310,7 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 				if err != nil {
 					return err
 				}
+
 				if conf.IsSwarmManager {
 					c.L.Lock()
 					if firstSwarmManager == nil {
@@ -317,8 +319,10 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 							log.Printf("Cannot initialize swarm on instance %s. Got: %v\n", i.Name, err)
 							return err
 						}
+
 						tokens = tkns
 						firstSwarmManager = i
+
 						c.Broadcast()
 						c.L.Unlock()
 					} else {
@@ -334,6 +338,7 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 						c.Wait()
 					}
 					c.L.Unlock()
+
 					err = dockerClient.SwarmJoin(fmt.Sprintf("%s:2377", firstSwarmManager.IP), tokens.Worker)
 					if err != nil {
 						log.Printf("Cannot join worker %s to swarm. Got: %v\n", i.Name, err)
@@ -351,13 +356,14 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 					if err != nil {
 						errch <- err
 					}
+
 					if exitCode != 0 {
 						errch <- fmt.Errorf("Command returned %d on instance %s", exitCode, i.IP)
 					}
+
 					errch <- nil
 				}()
 
-				// ctx.Done() could be called if the errgroup is cancelled due to a previous error. In that case, return immediately
 				select {
 				case err = <-errch:
 					return err
@@ -365,6 +371,7 @@ func (p *pwd) SessionSetup(session *types.Session, sconf SessionSetupConf) error
 					return ctx.Err()
 				}
 			}
+
 			return nil
 		})
 	}

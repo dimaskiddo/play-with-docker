@@ -13,6 +13,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: play-with-docker
     image: dimaskiddo/play-with-docker:latest
     container_name: 'play-with-docker'
     healthcheck:
@@ -33,7 +34,8 @@ services:
   play-with-docker-router:
     build:
       context: .
-      dockerfile: Dockerfile.l2
+      dockerfile: Dockerfile
+      target: play-with-docker-router
     image: dimaskiddo/play-with-docker:l2
     container_name: 'play-with-docker-router'
     healthcheck:

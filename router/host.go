@@ -64,6 +64,7 @@ func DecodeHost(host string) (HostInfo, error) {
 		i, _ := strconv.Atoi(matches[3])
 		info.EncodedPort = i
 	}
+
 	if matches[5] != "" {
 		i, _ := strconv.Atoi(matches[5])
 		info.Port = i

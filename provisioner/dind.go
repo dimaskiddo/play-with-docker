@@ -361,7 +361,7 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 }
 
 func (d *DinD) GetUserVolumePath(session *types.Session) (string, error) {
-	path, err := AbsUserVolumePath(session)
+	path, err := absUserVolumePath(session)
 	if err != nil {
 		return "", nil
 	}
@@ -372,12 +372,12 @@ func (d *DinD) GetUserVolumePath(session *types.Session) (string, error) {
 }
 
 func (d *DinD) DeleteUserVolumePath(session *types.Session) error {
-	volpath, err := AbsUserVolumePath(session)
+	path, err := absUserVolumePath(session)
 	if err != nil {
 		return err
 	}
 
-	err = os.RemoveAll(volpath)
+	err = os.RemoveAll(path)
 	if err != nil {
 		return err
 	}
@@ -385,7 +385,7 @@ func (d *DinD) DeleteUserVolumePath(session *types.Session) error {
 	return nil
 }
 
-func AbsUserVolumePath(session *types.Session) (string, error) {
+func absUserVolumePath(session *types.Session) (string, error) {
 	if session.Id == "" {
 		log.Printf("Error getting volume path: user session id not found")
 		return "", nil

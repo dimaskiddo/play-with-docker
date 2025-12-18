@@ -115,8 +115,10 @@ func (p *pwd) getProvisioner(t string) (provisioner.InstanceProvisionerApi, erro
 func (p *pwd) setGauges() {
 	s, _ := p.storage.SessionCount()
 	ses := float64(s)
+
 	i, _ := p.storage.InstanceCount()
 	ins := float64(i)
+
 	c := p.ClientCount()
 	cli := float64(c)
 

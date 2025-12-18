@@ -98,7 +98,7 @@ func ParseFlags() {
 	flag.StringVar(&CookieHashKey, "cookies-key-hash", GetEnvString("PWD_COOKIES_KEY_HASH", ""), "Cookies Validation Hash Key")
 	flag.StringVar(&CookieBlockKey, "cookies-key-encrypt", GetEnvString("PWD_COOKIES_KEY_ENCRYPT", ""), "Cookies Encryption Key")
 
-	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetEnvString("PWD_SSH_KEY_FILE", "/etc/ssh/ssh_host_rsa_key"), "SSH Private Key to Use")
+	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetEnvString("PWD_SSH_KEY_FILE", "./ssh_host_rsa_key"), "SSH Private Key to Use")
 
 	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
 	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs"), "Path Where Let's Encrypt Certificates Will be Stored")
