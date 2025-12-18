@@ -104,20 +104,20 @@
 
       $http({
         method: 'POST',
-        url: '/sessions/terminate',
+        url: '/sessions/' + $scope.sessionId + '/close',
         withCredentials: true
       }).then(function(response) {
         $scope.currentUser = null;
 
         setTimeout(function() {
           $window.location.href = '/';
-        }, 1000);
+        }, 100);
       }, function(error) {
         $scope.currentUser = null;
 
         setTimeout(function() {
           $window.location.href = '/';
-        }, 1000);
+        }, 100);
       });
     }
 
@@ -287,7 +287,6 @@
           }
 
           if (!instance) {
-            // instance is new and was created from another client, we should add it
             $scope.upsertInstance({ name: name });
             instance = $scope.idx[name];
           }
@@ -403,26 +402,6 @@
           document.write('session not found');
           return
         }
-      });
-    }
-
-    $scope.terminateSession = function() {
-      $http({
-        method: 'POST',
-        url: '/sessions/terminate',
-        withCredentials: true
-      }).then(function(response) {
-        $scope.currentUser = null;
-
-        setTimeout(function() {
-          $window.location.href = '/';
-        }, 1000);
-      }, function(error) {
-        $scope.currentUser = null;
-
-        setTimeout(function() {
-          $window.location.href = '/';
-        }, 1000);
       });
     }
 

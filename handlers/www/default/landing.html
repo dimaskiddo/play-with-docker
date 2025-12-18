@@ -21,7 +21,6 @@
         <nav>
           <ul class="nav nav-pills float-right">
             <li class="nav-item">
-              <a class="nav-link" href="https://github.com/play-with-docker/play-with-docker">Contribute</a>
             </li>
           </ul>
         </nav>
@@ -40,7 +39,6 @@
         </div>
         <form id="landingForm" method="POST" action="/">
           <p ng-show="loggedIn"><a class="btn btn-lg btn-success" href="#" ng-click="start()" role="button">Start</a></p>
-          <p ng-show="loggedIn"><a class="btn btn-lg btn-warning" href="#" ng-click="terminate()" role="button">Terminate Session</a></p>
           <input id="stack" type="hidden" name="stack" value=""/>
           <input id="stack_name" type="hidden" name="stack_name" value=""/>
           <input id="image_name" type="hidden" name="image_name" value=""/>
@@ -152,28 +150,6 @@
           }
 
           document.getElementById('landingForm').submit();
-        }
-
-        $scope.terminate = function() {
-          $http({
-            method: 'POST',
-            url: '/sessions/terminate',
-            withCredentials: true
-          }).then(function(response) {
-            $scope.user = null;
-            $scope.loggedIn = false;
-
-            setTimeout(function() {
-                window.location.reload();
-            }, 250);
-          }, function(error) {
-            $scope.user = null;
-            $scope.loggedIn = false;
-
-            setTimeout(function() {
-                window.location.reload();
-            }, 250);
-          });
         }
       }]);
     </script>

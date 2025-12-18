@@ -21,10 +21,12 @@ var (
 		Name: "sessions",
 		Help: "Sessions",
 	})
+
 	clientsGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "clients",
 		Help: "Clients",
 	})
+
 	instancesGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "instances",
 		Help: "Instances",
@@ -103,7 +105,6 @@ type PWDApi interface {
 }
 
 func NewPWD(f docker.FactoryApi, e event.EventApi, s storage.StorageApi, sp provisioner.SessionProvisionerApi, ipf provisioner.InstanceProvisionerFactoryApi) *pwd {
-	//  windowsProvisioner: provisioner.NewWindowsASG(f, s), dindProvisioner: provisioner.NewDinD(f)
 	return &pwd{dockerFactory: f, event: e, storage: s, generator: id.XIDGenerator{}, sessionProvisioner: sp, instanceProvisionerFactory: ipf}
 }
 

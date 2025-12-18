@@ -40,6 +40,7 @@ func main() {
 		task.NewCheckK8sClusterStatus(e, kf),
 		task.NewCheckK8sClusterExposedPorts(e, kf),
 	}
+
 	sch, err := scheduler.NewScheduler(tasks, s, e, core)
 	if err != nil {
 		log.Fatal("Error initializing the scheduler: ", err)
@@ -88,6 +89,7 @@ func initStorage() storage.StorageApi {
 	if err != nil && !os.IsNotExist(err) {
 		log.Fatal("Error initializing StorageAPI: ", err)
 	}
+
 	return s
 }
 
