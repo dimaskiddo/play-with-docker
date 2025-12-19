@@ -420,31 +420,9 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		h.Binds = append(h.Binds, fmt.Sprintf("%s:/data", opts.UserVolume))
 	}
 
-	search, err := d.c.ImageSearch(context.Background(), opts.Image, types.ImageSearchOptions{
-		Limit: 5,
-	})
+	err = d.PullImage(context.Background(), opts.Image)
 	if err != nil {
-		log.Printf("Error searching image %s: %v\n", opts.Image, err)
-
-		log.Printf("Pulling image caused by search result not found [%s]\n", opts.Image)
-		err = d.PullImage(context.Background(), opts.Image)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(search) == 0 {
-		log.Printf("Pulling image caused by image not found [%s]\n", opts.Image)
-		err = d.PullImage(context.Background(), opts.Image)
-		if err != nil {
-			return err
-		}
-	} else if len(search) > 0 && config.AlwaysPull {
-		log.Printf("Pulling image caused by always pull configuration [%s]\n", opts.Image)
-		err = d.PullImage(context.Background(), opts.Image)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	container, err := d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
