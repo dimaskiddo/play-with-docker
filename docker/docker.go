@@ -417,13 +417,23 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 			h.Binds = []string{}
 		}
 
-		// UserVolume contains the absolute host path
 		h.Binds = append(h.Binds, fmt.Sprintf("%s:/data", opts.UserVolume))
 	}
 
-	err = d.pullImage(context.Background(), opts.Image)
-	if err != nil {
-		return err
+	search, _ := d.c.ImageSearch(context.Background(), opts.Image, types.ImageSearchOptions{
+		Limit: 5,
+	})
+
+	if len(search) == 0 {
+		err = d.PullImage(context.Background(), opts.Image)
+		if err != nil {
+			return err
+		}
+	} else if len(search) > 0 && config.AlwaysPull {
+		err = d.PullImage(context.Background(), opts.Image)
+		if err != nil {
+			return err
+		}
 	}
 
 	container, err := d.c.ContainerCreate(context.Background(), cf, h, networkConf, opts.ContainerName)
@@ -520,7 +530,7 @@ func (d *docker) ContainerIPs(id string) (map[string]string, error) {
 	return ips, nil
 }
 
-func (d *docker) pullImage(ctx context.Context, image string) error {
+func (d *docker) PullImage(ctx context.Context, image string) error {
 	_, err := reference.Parse(image)
 	if err != nil {
 		return err
@@ -532,6 +542,7 @@ func (d *docker) pullImage(ctx context.Context, image string) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = io.Copy(ioutil.Discard, responseBody)
 
 	return err

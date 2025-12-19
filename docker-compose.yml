@@ -28,6 +28,7 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /data/play-with-docker:/data/play-with-docker
       - certs:/usr/app/play-with-docker/certs
       - sessions:/usr/app/play-with-docker/sessions
 
@@ -54,5 +55,6 @@ services:
       - PWD_SESSION_FILE=./sessions/network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /data/play-with-docker:/data/play-with-docker
       - certs:/usr/app/play-with-docker/certs
       - sessions:/usr/app/play-with-docker/sessions

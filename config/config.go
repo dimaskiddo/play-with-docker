@@ -34,12 +34,12 @@ var (
 	// Unsafe enables a number of unsafe features when set. It is principally
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
-	UseLetsEncrypt, NoWindows, ForceTLS, ExternalDindVolume, Unsafe bool
-	ExternalDindVolumeSize, ExternalDataDir                         string
-	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg              float64
-	DefaultLimitMemory, DefaultMaxMemory                            int64
-	DefaultMaxPIDs                                                  int64
-	SecureCookie                                                    *securecookie.SecureCookie
+	UseLetsEncrypt, ForceTLS, ExternalDindVolume, AlwaysPull, NoWindows, Unsafe bool
+	ExternalDindVolumeSize, ExternalDataDir                                     string
+	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg                          float64
+	DefaultLimitMemory, DefaultMaxMemory                                        int64
+	DefaultMaxPIDs                                                              int64
+	SecureCookie                                                                *securecookie.SecureCookie
 )
 
 var (
@@ -103,12 +103,14 @@ func ParseFlags() {
 	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
 	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetAbsoultePath(GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs")), "Path Where Let's Encrypt Certificates Will be Stored")
 
-	flag.BoolVar(&NoWindows, "windows-disable", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
-
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
+
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DIND External Volume Through XFS Volume Driver")
 	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
 	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetAbsoultePath(GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "/data/play-with-docker")), "DIND External Data Directory to Store Persistent Data in /data Path")
+
+	flag.BoolVar(&AlwaysPull, "docker-always-pull-image", GetEnvBool("PWD_DOCKER_ALWAYS_PULL_IMAGE", false), "Docker Always Pull Image Even Image Already Exist")
+	flag.BoolVar(&NoWindows, "docker-windows-support", !GetEnvBool("PWD_DOCKER_WINDOWS_SUPPORT", false), "Docker for Windows Instances Support")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")

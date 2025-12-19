@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 	"path/filepath"
 )
 
@@ -20,11 +19,6 @@ func GetAbsoultePath(path string) string {
 		} else {
 			path = absPath
 		}
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Printf("Error getting absolute path for %s: %v\n", path, err)
-		return path
 	}
 
 	return path
