@@ -287,10 +287,17 @@ type CreateContainerOpts struct {
 }
 
 func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
+	if len(strings.Split(opts.Image, "/")) < 2 {
+		opts.Image = "docker.io/" + opts.Image
+	}
+
+	env := opts.Envs
+	env = append(env, fmt.Sprintf("TZ=%s", config.GetEnvString("TZ", "Asia/Jakarta")))
+	env = append(env, fmt.Sprintf("SESSION_ID=%s", opts.SessionId))
+	env = append(env, fmt.Sprintf("PWD_HOST_FQDN=%s", opts.HostFQDN))
+
 	containerDir := "/opt/pwd"
 	containerCertDir := fmt.Sprintf("%s/certs", containerDir)
-
-	env := append(opts.Envs, fmt.Sprintf("SESSION_ID=%s", opts.SessionId))
 
 	if len(opts.ServerCert) > 0 {
 		env = append(env, `DOCKER_TLSCERT=\/opt\/pwd\/certs\/cert.pem`)
@@ -368,9 +375,6 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 
 	t := true
 	h.Resources.OomKillDisable = &t
-
-	env = append(env, fmt.Sprintf("TZ=%s", config.GetEnvString("TZ", "Asia/Jakarta")))
-	env = append(env, fmt.Sprintf("PWD_HOST_FQDN=%s", opts.HostFQDN))
 
 	cf := &container.Config{
 		Hostname:     opts.Hostname,

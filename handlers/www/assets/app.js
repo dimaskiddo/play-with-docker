@@ -59,8 +59,8 @@
           data : { 
             ImageName: $ctrl.selectedImage, 
             type: instanceType,
-            LimitCPU: $ctrl.cpuLimit,
-            LimitMemory: $ctrl.memoryLimit
+            LimitCPU: $ctrl.limitCPU,
+            LimitMemory: $ctrl.limitMemory
           }
         }).then(function(response) {
           upsertInstance(response.data);
