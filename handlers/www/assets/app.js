@@ -37,17 +37,19 @@
     $scope.uploadProgress = 0;
 
     function InstanceCreationModalController($mdDialog, sessionId, instanceType, upsertInstance, showAlert) {
-      var $controller = this;
+      var $ctrl = this;
       
-      $controller.selectedImage = InstanceService.getDesiredImage();
-      $controller.limitCPU = 1;
-      $controller.limitMemory = 2048;
+      $ctrl.$onInit = function () {      
+        $ctrl.selectedImage = InstanceService.getDesiredImage();
+        $ctrl.limitCPU = 1;
+        $ctrl.limitMemory = 2048;
+      }
 
-      $controller.close = function() {
+      $ctrl.close = function() {
         $mdDialog.cancel();
       }
 
-      $controller.create = function() {
+      $ctrl.create = function() {
         updateNewInstanceBtnState(true);
         $mdDialog.hide();
 
@@ -55,10 +57,10 @@
           method: 'POST',
           url: '/sessions/' + sessionId + '/instances',
           data : { 
-            ImageName: $controller.selectedImage, 
+            ImageName: $ctrl.selectedImage, 
             type: instanceType,
-            LimitCPU: $controller.cpuLimit,
-            LimitMemory: $controller.memoryLimit
+            LimitCPU: $ctrl.cpuLimit,
+            LimitMemory: $ctrl.memoryLimit
           }
         }).then(function(response) {
           upsertInstance(response.data);

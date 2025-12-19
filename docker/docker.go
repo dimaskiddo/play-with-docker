@@ -328,20 +328,6 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 	var pidsLimit = config.DefaultMaxPIDs
 	h.Resources.PidsLimit = &pidsLimit
 
-	memoryLimit := config.DefaultLimitMemory * Megabyte
-	if opts.LimitMemory > 0 {
-		if opts.LimitMemory > config.DefaultMaxMemory {
-			opts.LimitMemory = config.DefaultMaxMemory
-		}
-
-		memoryLimit = opts.LimitMemory * Megabyte
-	}
-
-	if memoryLimit > 0 {
-		h.Resources.Memory = memoryLimit
-		log.Printf("Setting memory limit to %d MB for container %s\n", memoryLimit/Megabyte, opts.ContainerName)
-	}
-
 	cpuLimit := config.DefaultLimitCPUCore
 	if opts.LimitCPU > 0 {
 		if opts.LimitCPU > config.DefaultMaxCPUCore {
@@ -362,14 +348,30 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 				h.Resources.CpusetCpus = fmt.Sprintf("0-%d", numCPUs-1)
 			}
 
-			log.Printf("Setting CPU limit to %.2f CPUs (cpuset: %s) for container %s\n", cpuLimit, h.Resources.CpusetCpus, opts.ContainerName)
+			log.Printf("Setting cpu limit to %.2f CPUs (set: %s) for container %s\n", cpuLimit, h.Resources.CpusetCpus, opts.ContainerName)
 		}
+	}
+
+	memoryLimit := config.DefaultLimitMemory * Megabyte
+	if opts.LimitMemory > 0 {
+		if opts.LimitMemory > config.DefaultMaxMemory {
+			opts.LimitMemory = config.DefaultMaxMemory
+		}
+
+		memoryLimit = opts.LimitMemory * Megabyte
+	}
+
+	if memoryLimit > 0 {
+		h.Resources.Memory = memoryLimit
+		log.Printf("Setting memory limit to %d MB for container %s\n", memoryLimit/Megabyte, opts.ContainerName)
 	}
 
 	t := true
 	h.Resources.OomKillDisable = &t
 
+	env = append(env, fmt.Sprintf("TZ=%s", config.GetEnvString("TZ", "Asia/Jakarta")))
 	env = append(env, fmt.Sprintf("PWD_HOST_FQDN=%s", opts.HostFQDN))
+
 	cf := &container.Config{
 		Hostname:     opts.Hostname,
 		Image:        opts.Image,

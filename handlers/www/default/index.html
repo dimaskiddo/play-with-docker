@@ -35,6 +35,9 @@
           <md-toolbar class="md-theme-indigo">
             <span class="clock">{{ttl}}</span>
             <md-button class="md-warn md-raised" ng-click="closeSession()">Close Session</md-button>
+            <div class="md-toolbar-tools" ng-if="currentUser">
+              <h1 class="md-toolbar-tools">{{currentUser.name || currentUser.email || "Guest"}}</span>
+            </div>
             <div class="md-toolbar-tools">
               <h1 class="md-toolbar-tools">Instances</h1>
             </div>
@@ -107,21 +110,19 @@
                   <label>SSH</label>
                   <input value="ssh -i keyfile_{{instance.hostname}}_{{instance.session_id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="60">
                   <md-icon ngclipboard data-clipboard-text="ssh -i keyfile_{{instance.hostname}}_{{instance.session_id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
-                    <md-tooltip md-direction="top">Copy!</md-tooltip>
-                  </md-icon>
                 </md-input-container>
                 <md-button class="md-accent md-raised" ng-click="downloadKey(instance)">
                   <md-icon class="material-icons">vpn_key</md-icon> Download SSH Key
                 </md-button>
                 <div class="md-block" glex-gt-sm></div>
               </div>
+              <div layout-gt-sm="row">
+                <md-button class="md-primary md-raised" ng-click="openEditor(instance)">
+                  <md-icon class="material-icons">insert_drive_file</md-icon> File Editor
+                </md-button>
+                <settings-icon></settings-icon>
+              </div>
             </md-card-content>
-            <md-card-actions>
-              <md-button class="md-primary md-raised" ng-click="openEditor(instance)">
-                <md-icon class="material-icons">insert_drive_file</md-icon> File Editor
-              </md-button>
-              <settings-icon></settings-icon>
-            </md-card-actions>
           </md-card>
           <md-card flex md-theme="default" md-theme-watch >
             <div ng-show="uploadMessage" class="uploadStatus">
@@ -207,18 +208,6 @@
           <div layout="row">
             <div flex="50">
               <md-input-container class="md-block" flex-gt-sm>
-                <label>Instance Image</label>
-                <md-select ng-model="$ctrl.currentDesiredInstanceImage" ng-model-options="{getterSetter: true}" placeholder="New Instance Image">
-                  <md-option ng-repeat="image in $ctrl.instanceImages" value="{{image}}">
-                    {{ image }}
-                  </md-option>
-                </md-select>
-              </md-input-container>
-            </div>
-          </div>
-          <div layout="row">
-            <div flex="50">
-              <md-input-container class="md-block" flex-gt-sm>
                 <label>Terminal Font Size</label>
                 <md-select ng-model="$ctrl.currentTerminalFontSize" ng-model-options="{getterSetter: true}">
                   <md-option ng-repeat="size in $ctrl.terminalFontSizes" value="{{size}}">
@@ -250,27 +239,22 @@
       <md-dialog-content>
         <div class="md-dialog-content" style="width:500px; padding: 20px;">
           <div layout="column">
-            <md-item-template>
-              <span class="item-title">
-                <md-icon class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 8px;">archive</md-icon>
-                <span md-highlight-text="$ctrl.searchText" md-highlight-flags="i">{{image}}</span>
-              </span>
-            </md-item-template>
+            <md-input-container class="md-icon-float md-block" flex-gt-sm>
+              <label>Instance Image</label>
+              <md-icon class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 8px;">archive</md-icon>
+              <input ng-model="$ctrl.selectedImage" type="text" value="$ctrl.selectedImage" ng-trim>
+            </md-input-container>
             <div layout="row" layout-align="space-between center">
-              <div flex="48">
-                <md-input-container class="md-block">
-                  <label>CPU Limit (cores)</label>
-                  <input type="number" ng-model="$ctrl.cpuLimit" min="0.5" max="4" step="0.5" required>
-                  <div class="hint">Max: 4 Cores</div>
-                </md-input-container>
-              </div>
-              <div flex="48">
-                <md-input-container class="md-block">
-                  <label>Memory Limit (MB)</label>
-                  <input type="number" ng-model="$ctrl.memoryLimit" min="512" max="8192" step="512" required>
-                  <div class="hint">Max: 8192 MB (8 GB)</div>
-                </md-input-container>
-              </div>
+              <md-input-container class="md-block" flex-gt-sm>
+                <label>CPU</label>
+                <input type="number" ng-model="$ctrl.limitCPU" min="0.5" max="4" step="0.5" required>
+                <div class="hint">Max: 4 Cores</div>
+              </md-input-container>
+              <md-input-container class="md-block" flex-gt-sm>
+                <label>Memory</label>
+                <input type="number" ng-model="$ctrl.limitMemory" min="512" max="8192" step="512" required>
+                <div class="hint">Max: 8192 MB (8 GB)</div>
+              </md-input-container>
             </div>
             <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
               <p style="margin: 0; font-size: 12px; color: #666;">
