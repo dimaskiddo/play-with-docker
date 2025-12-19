@@ -13,6 +13,10 @@ type Mock struct {
 	mock.Mock
 }
 
+func (m *Mock) SessionCleanUserData(session *types.Session) {
+	m.Called(session)
+}
+
 func (m *Mock) SessionNew(ctx context.Context, config types.SessionConfig) (*types.Session, error) {
 	args := m.Called(ctx, config)
 	return args.Get(0).(*types.Session), args.Error(1)

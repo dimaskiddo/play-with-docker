@@ -27,5 +27,6 @@ func CloseSession(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	core.SessionCleanUserData(session)
 	ResetCookie(rw, req.Host)
 }

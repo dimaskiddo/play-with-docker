@@ -75,6 +75,7 @@ type PWDApi interface {
 	SessionDeployStack(session *types.Session) error
 	SessionGet(id string) (*types.Session, error)
 	SessionSetup(session *types.Session, conf SessionSetupConf) error
+	SessionCleanUserData(session *types.Session)
 
 	InstanceNew(session *types.Session, conf types.InstanceConfig) (*types.Instance, error)
 	InstanceResizeTerminal(instance *types.Instance, cols, rows uint) error

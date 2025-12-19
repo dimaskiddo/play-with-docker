@@ -61,6 +61,15 @@ type SessionSetupInstanceConf struct {
 	Tls            bool       `json:"tls"`
 }
 
+func (p *pwd) SessionCleanUserData(s *types.Session) {
+	userVolumePath := config.GetAbsoultePath(filepath.Join(config.ExternalDataDir, s.Id))
+
+	err := os.RemoveAll(userVolumePath)
+	if err != nil {
+		log.Printf("Error while removing user volume data %s: %v", userVolumePath, err)
+	}
+}
+
 func (p *pwd) SessionNew(ctx context.Context, config types.SessionConfig) (*types.Session, error) {
 	defer observeAction("SessionNew", time.Now())
 
@@ -139,14 +148,7 @@ func (p *pwd) SessionClose(s *types.Session) error {
 		return err
 	}
 
-	if p.dindProvisioner != nil {
-		userVolumePath := config.GetAbsoultePath(filepath.Join(config.ExternalDataDir, s.Id))
-
-		err = os.RemoveAll(userVolumePath)
-		if err != nil {
-			log.Printf("Error while removing user volume data %s: %v", userVolumePath, err)
-		}
-	}
+	p.SessionCleanUserData(s)
 
 	if err := p.sessionProvisioner.SessionClose(s); err != nil {
 		log.Println(err)
