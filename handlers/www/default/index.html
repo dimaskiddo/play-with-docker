@@ -35,7 +35,7 @@
           <md-toolbar class="md-theme-indigo">
             <span class="clock">{{ttl}}</span>
             <md-button class="md-warn md-raised" ng-click="closeSession()">Close Session</md-button>
-            <div class="md-toolbar-tools" ng-if="currentUser">
+            <div class="md-toolbar-tools">
               <h1 class="md-toolbar-tools">{{currentUser.name || currentUser.email || "Guest"}}</span>
             </div>
             <div class="md-toolbar-tools">
@@ -229,7 +229,7 @@
     <script type="text/ng-template" id="instance-modal.html">
       <md-toolbar>
         <div class="md-toolbar-tools">
-          <h2>Create New Instance</h2>
+          <h2>Add New Instance</h2>
           <span flex></span>
           <md-button class="md-icon-button" ng-click="$ctrl.close()">
             <md-icon class="material-icon" aria-label="Close dialog">close</md-icon>
@@ -241,7 +241,6 @@
           <div layout="column">
             <md-input-container class="md-icon-float md-block" flex-gt-sm>
               <label>Instance Image</label>
-              <md-icon class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 8px;">archive</md-icon>
               <input ng-model="$ctrl.selectedImage" type="text" value="$ctrl.selectedImage" ng-trim>
             </md-input-container>
             <div layout="row" layout-align="space-between center">
@@ -258,7 +257,7 @@
             </div>
             <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
               <p style="margin: 0; font-size: 12px; color: #666;">
-                <strong>Note:</strong> Resource limits help ensure fair usage. Choose appropriate values based on your workload requirements.
+                <strong>Note:</strong> Choose appropriate values based on your workload requirements.
               </p>
             </div>
           </div>
@@ -269,7 +268,7 @@
         <md-button ng-click="$ctrl.close()">
           Cancel
         </md-button>
-        <md-button ng-click="$ctrl.create()" class="md-primary md-raised" ng-disabled="!$ctrl.selectedImage || !$ctrl.cpuLimit || !$ctrl.memoryLimit">
+        <md-button ng-click="$ctrl.create()" class="md-primary md-raised" ng-disabled="!$ctrl.selectedImage || !$ctrl.limitCPU || !$ctrl.limitMemory">
           Create
         </md-button>
       </md-dialog-actions>
