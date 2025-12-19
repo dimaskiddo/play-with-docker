@@ -155,10 +155,6 @@ func (t *collectStats) Run(ctx context.Context, instance *types.Instance) error 
 	previousCPU := v.PreCPUStats.CPUUsage.TotalUsage
 	previousSystem := v.PreCPUStats.SystemUsage
 
-	// Debug Logging
-	cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage) - float64(previousCPU)
-	systemDelta := float64(v.CPUStats.SystemUsage) - float64(previousSystem)
-
 	cpuPercent := calculateCPUPercentUnix(previousCPU, previousSystem, v, numCPUs)
 	cpuUsage := cpuPercent / 100.0
 
@@ -167,8 +163,12 @@ func (t *collectStats) Run(ctx context.Context, instance *types.Instance) error 
 		percentOfAllocated = (cpuUsage / allocatedCPUs) * 100.0
 	}
 
-	log.Printf("[CPU Debug] Instance: %s, CPUDelta: %.0f, SystemDelta: %.0f, NumCPUs: %.0f, CPUPercent: %.2f%%, AllocatedCPUs: %.2f, PercentOfAllocated: %.2f%%",
-		instance.Name, cpuDelta, systemDelta, numCPUs, cpuPercent, allocatedCPUs, percentOfAllocated)
+	// Debug Logging
+	// cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage) - float64(previousCPU)
+	// systemDelta := float64(v.CPUStats.SystemUsage) - float64(previousSystem)
+	//
+	// log.Printf("[CPU Debug] Instance: %s, CPUDelta: %.0f, SystemDelta: %.0f, NumCPUs: %.0f, CPUPercent: %.2f%%, AllocatedCPUs: %.2f, PercentOfAllocated: %.2f%%",
+	// 	instance.Name, cpuDelta, systemDelta, numCPUs, cpuPercent, allocatedCPUs, percentOfAllocated)
 
 	stats.Cpu = fmt.Sprintf("%.1f%% (%.2f / %.1f CPUs)", percentOfAllocated, cpuUsage, allocatedCPUs)
 

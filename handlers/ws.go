@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/storage"
@@ -137,8 +138,21 @@ func WSH(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	s := newSocket(r, c)
+	// Set up a Ping ticker
+	// It must be shorter than your 10s WriteTimeout
+	ticker := time.NewTicker(8 * time.Second)
+	defer ticker.Stop()
 
+	// Start a goroutine to send Pings
+	go func() {
+		for range ticker.C {
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}()
+
+	s := newSocket(r, c)
 	ws(s)
 	s.process()
 }

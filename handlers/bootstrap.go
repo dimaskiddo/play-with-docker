@@ -9,6 +9,8 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"net"
+	"strings"
 
 	"log"
 	"net/http"
@@ -58,15 +60,81 @@ func init() {
 	staticFiles, _ = fs.Sub(embeddedFiles, "www")
 }
 
+func HeaderRealIP(r *http.Request) {
+	_, port, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		port = "0"
+	}
+
+	rip := ""
+	if cfip := r.Header.Get("CF-Connecting-IP"); cfip != "" {
+		rip = cfip
+	} else if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
+		rip = xrip
+	} else if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		rip = strings.TrimSpace(strings.Split(xff, ",")[0])
+	}
+
+	if rip != "" {
+		r.RemoteAddr = net.JoinHostPort(rip, port)
+	}
+}
+
 func HeadersSecurity(w http.ResponseWriter) {
 	w.Header().Set("X-Powered-By", "Play-With-Docker (Dimas Restu H)")
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("X-XSS-Protection", "1; mode=block")
 	w.Header().Set("X-DNS-Prefetch-Control", "off")
 
 	w.Header().Set("Referrer-Policy", "no-referrer-when-downgrade")
+
+	cdnList := []string{
+		"https://apis.google.com",
+		"https://code.jquery.com",
+		"https://unpkg.com",
+		"https://cdn.rawgit.com",
+		"https://cdn.jsdelivr.net",
+		"https://cdnjs.cloudflare.com",
+		"https://cloudflareinsights.com",
+		"https://*.cloudflareinsights.com",
+		"https://*.cloudflare.com",
+		"https://*.googleapis.com",
+		"https://*.bootstrapcdn.com",
+		"https://*.fastly.net",
+		"https://*.fastly.io",
+	}
+
+	fontList := []string{
+		"https://unpkg.com",
+		"https://fonts.gstatic.com",
+		"https://*.cloudflare.com",
+		"https://*.bootstrapcdn.com",
+		"https://*.fastly.net",
+		"https://*.fastly.io",
+	}
+
+	imgList := []string{
+		"data:",
+		"https://*.github.io",
+		"https://*.githubusercontent.com",
+		"https://*.cloudflare.com",
+	}
+
+	cspCdn := strings.Join(cdnList, " ")
+	cspFont := strings.Join(fontList, " ")
+	cspImg := strings.Join(imgList, " ")
+
+	csp := "" +
+		"default-src 'self'; " +
+		"connect-src 'self' ws: wss: " + cspCdn + "; " +
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval' " + cspCdn + "; " +
+		"style-src 'self' 'unsafe-inline' " + cspCdn + "; " +
+		"font-src 'self' " + cspFont + "; " +
+		"img-src 'self' " + cspImg + ";"
+
+	w.Header().Set("Content-Security-Policy", csp)
 }
 
 func HeadersNoCache(w http.ResponseWriter) {
@@ -77,6 +145,7 @@ func HeadersNoCache(w http.ResponseWriter) {
 
 func MiddlewareHeaderMux(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		HeaderRealIP(r)
 		HeadersSecurity(w)
 		HeadersNoCache(w)
 
@@ -85,6 +154,7 @@ func MiddlewareHeaderMux(next http.Handler) http.Handler {
 }
 
 func MiddlewareHeaderNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	HeaderRealIP(r)
 	HeadersSecurity(w)
 	HeadersNoCache(w)
 
@@ -107,6 +177,8 @@ func Register(extend HandlerExtender) {
 
 	n := negroni.Classic()
 	n.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+	n.Use(negroni.NewRecovery())
+	n.Use(negroni.NewLogger())
 
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/ping", Ping).Methods("GET")
@@ -176,7 +248,9 @@ func Register(extend HandlerExtender) {
 	httpServer := http.Server{
 		Addr:              "0.0.0.0:" + config.PortNumber,
 		Handler:           n,
-		IdleTimeout:       30 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Minute,
+		IdleTimeout:       60 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -202,6 +276,7 @@ func Register(extend HandlerExtender) {
 
 		httpServer.TLSConfig = &tls.Config{
 			GetCertificate: certManager.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
 		}
 
 		go func() {
@@ -222,13 +297,17 @@ func Register(extend HandlerExtender) {
 
 			nr := negroni.Classic()
 			nr.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+			nr.Use(negroni.NewRecovery())
+			nr.Use(negroni.NewLogger())
 
 			nr.UseHandler(rr)
 
 			redirectServer := http.Server{
 				Addr:              "0.0.0.0:3001",
 				Handler:           certManager.HTTPHandler(nr),
-				IdleTimeout:       30 * time.Second,
+				ReadTimeout:       15 * time.Second,
+				WriteTimeout:      15 * time.Minute,
+				IdleTimeout:       60 * time.Second,
 				ReadHeaderTimeout: 5 * time.Second,
 			}
 

@@ -381,8 +381,8 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		Tty:          true,
 		OpenStdin:    true,
 		AttachStdin:  true,
-		AttachStdout: false,
-		AttachStderr: false,
+		AttachStdout: true,
+		AttachStderr: true,
 		Env:          env,
 		Labels:       opts.Labels,
 	}

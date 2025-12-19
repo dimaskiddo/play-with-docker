@@ -84,6 +84,7 @@ func connectNetworks() error {
 	for netId, opts := range networks {
 		settings := &network.EndpointSettings{}
 		settings.IPAddress = opts.IPAddress
+
 		log.Printf("Connected to network [%s] with ip [%s]\n", netId, opts.IPAddress)
 		c.NetworkConnect(ctx, netId, config.PWDContainerName, settings)
 	}
