@@ -36,9 +36,6 @@ func fileDownloadKey(rw http.ResponseWriter, req *http.Request) {
 
 	rw.Header().Set("Content-Type", "application/octet-stream")
 	rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"keyfile_%s_%s.pem\"", sessionId, i.Hostname))
-	rw.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	rw.Header().Set("Pragma", "no-cache")
-	rw.Header().Set("Expires", "0")
 
 	if _, err = io.Copy(rw, instanceFile); err != nil {
 		log.Println("Error writing ssh key to response:", err)

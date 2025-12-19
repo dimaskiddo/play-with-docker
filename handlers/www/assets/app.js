@@ -39,7 +39,11 @@
     function InstanceCreationModalController($mdDialog, sessionId, instanceType, upsertInstance, showAlert) {
       var $ctrl = this;
       
-      $ctrl.selectedImage = $scope.playground.default_instance_image;
+      $ctrl.selectedImage = $scope.playground.default_dind_instance_image;
+
+      $ctrl.limitMaxCPU = $scope.playground.max_limit_cpu;
+      $ctrl.limitMaxMemory = $scope.playground.max_limit_memory;
+
       $ctrl.limitCPU = $scope.playground.default_limit_cpu;
       $ctrl.limitMemory = $scope.playground.default_limit_memory;
 

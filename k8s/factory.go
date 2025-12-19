@@ -51,6 +51,7 @@ func NewClient(instance *types.Instance, proxyHost string) (*kubernetes.Clientse
 		GroupVersion:         &schema.GroupVersion{Version: "v1"},
 		NegotiatedSerializer: serializer.WithoutConversionCodecFactory{CodecFactory: scheme.Codecs},
 	}
+
 	restConfig := &rest.Config{
 		Host:          durl,
 		APIPath:       "/api/",

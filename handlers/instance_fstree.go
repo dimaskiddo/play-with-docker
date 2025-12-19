@@ -33,7 +33,8 @@ func fsTree(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rw.Header().Set("content-type", "application/json")
+	rw.Header().Set("Content-Type", "application/json")
+
 	if _, err = io.Copy(rw, tree); err != nil {
 		log.Println(err)
 		rw.WriteHeader(http.StatusInternalServerError)

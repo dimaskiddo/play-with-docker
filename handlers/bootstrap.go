@@ -58,6 +58,39 @@ func init() {
 	staticFiles, _ = fs.Sub(embeddedFiles, "www")
 }
 
+func HeadersSecurity(w http.ResponseWriter) {
+	w.Header().Set("X-Powered-By", "Play-With-Docker (Dimas Restu H)")
+
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
+	w.Header().Set("X-DNS-Prefetch-Control", "off")
+
+	w.Header().Set("Referrer-Policy", "no-referrer-when-downgrade")
+}
+
+func HeadersNoCache(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+}
+
+func MiddlewareHeaderMux(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		HeadersSecurity(w)
+		HeadersNoCache(w)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func MiddlewareHeaderNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	HeadersSecurity(w)
+	HeadersNoCache(w)
+
+	next(w, r)
+}
+
 func Bootstrap(c pwd.PWDApi, ev event.EventApi) {
 	core = c
 	e = ev
@@ -67,20 +100,32 @@ func Register(extend HandlerExtender) {
 	initPlaygrounds()
 
 	r := mux.NewRouter()
+	r.Use(MiddlewareHeaderMux)
+
 	corsRouter := mux.NewRouter()
+	corsRouter.Use(MiddlewareHeaderMux)
 
-	corsHandler := gh.CORS(
-		gh.AllowCredentials(),
-		gh.AllowedHeaders([]string{"x-requested-with", "content-type"}),
-		gh.AllowedMethods([]string{"GET", "POST", "HEAD", "DELETE"}),
-		gh.AllowedOrigins([]string{"*"}),
-		gh.AllowedOriginValidator(func(origin string) bool {
-			return true
-		}))
+	n := negroni.Classic()
+	n.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
 
+	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/ping", Ping).Methods("GET")
+
+	r.HandleFunc("/", Landing).Methods("GET")
+	r.HandleFunc("/p/{sessionId}", Home).Methods("GET")
+	r.HandleFunc("/users/{userId:.{3,}}", GetUser).Methods("GET")
+	r.HandleFunc("/oauth/providers", ListProviders).Methods("GET")
+	r.HandleFunc("/oauth/providers/{provider}/login", Login).Methods("GET")
+	r.HandleFunc("/oauth/providers/{provider}/callback", LoginCallback).Methods("GET")
+	r.HandleFunc("/my/playground", GetCurrentPlayground).Methods("GET")
+	r.HandleFunc("/playgrounds", NewPlayground).Methods("PUT")
+	r.HandleFunc("/playgrounds", ListPlaygrounds).Methods("GET")
+
+	corsRouter.HandleFunc("/", NewSession).Methods("POST")
+	corsRouter.HandleFunc("/users/me", LoggedInUser).Methods("GET")
 	corsRouter.HandleFunc("/instances/images", GetInstanceImages).Methods("GET")
 	corsRouter.HandleFunc("/sessions/{sessionId}", GetSession).Methods("GET")
+	corsRouter.HandleFunc("/sessions/{sessionId}/ws/", WSH).Methods("GET")
 	corsRouter.HandleFunc("/sessions/{sessionId}/close", CloseSession).Methods("POST")
 	corsRouter.HandleFunc("/sessions/{sessionId}", CloseSession).Methods("DELETE")
 	corsRouter.HandleFunc("/sessions/{sessionId}/setup", SessionSetup).Methods("POST")
@@ -94,43 +139,36 @@ func Register(extend HandlerExtender) {
 
 	r.HandleFunc("/sessions/{sessionId}/instances/{instanceName}/editor", func(rw http.ResponseWriter, r *http.Request) {
 		serveAsset(rw, r, "editor.html")
-	})
+	}).Methods("GET")
+
+	r.PathPrefix("/assets").HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		serveAsset(rw, r, r.URL.Path[1:])
+	}).Methods("GET")
+
+	r.HandleFunc("/robots.txt", func(rw http.ResponseWriter, r *http.Request) {
+		serveAsset(rw, r, "robots.txt")
+	}).Methods("GET")
+
+	r.HandleFunc("/503", func(rw http.ResponseWriter, r *http.Request) {
+		serveAsset(rw, r, "503.html")
+	}).Methods("GET")
 
 	r.HandleFunc("/ooc", func(rw http.ResponseWriter, r *http.Request) {
 		serveAsset(rw, r, "ooc.html")
 	}).Methods("GET")
-	r.HandleFunc("/503", func(rw http.ResponseWriter, r *http.Request) {
-		serveAsset(rw, r, "503.html")
-	}).Methods("GET")
-	r.HandleFunc("/p/{sessionId}", Home).Methods("GET")
-	r.PathPrefix("/assets").HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		serveAsset(rw, r, r.URL.Path[1:])
-	})
-	r.HandleFunc("/robots.txt", func(rw http.ResponseWriter, r *http.Request) {
-		serveAsset(rw, r, "robots.txt")
-	})
-
-	corsRouter.HandleFunc("/sessions/{sessionId}/ws/", WSH)
-	r.Handle("/metrics", promhttp.Handler())
-
-	r.HandleFunc("/", Landing).Methods("GET")
-
-	corsRouter.HandleFunc("/users/me", LoggedInUser).Methods("GET")
-	r.HandleFunc("/users/{userId:.{3,}}", GetUser).Methods("GET")
-	r.HandleFunc("/oauth/providers", ListProviders).Methods("GET")
-	r.HandleFunc("/oauth/providers/{provider}/login", Login).Methods("GET")
-	r.HandleFunc("/oauth/providers/{provider}/callback", LoginCallback).Methods("GET")
-	r.HandleFunc("/playgrounds", NewPlayground).Methods("PUT")
-	r.HandleFunc("/playgrounds", ListPlaygrounds).Methods("GET")
-	r.HandleFunc("/my/playground", GetCurrentPlayground).Methods("GET")
-
-	corsRouter.HandleFunc("/", NewSession).Methods("POST")
 
 	if extend != nil {
 		extend(corsRouter)
 	}
 
-	n := negroni.Classic()
+	corsHandler := gh.CORS(
+		gh.AllowCredentials(),
+		gh.AllowedHeaders([]string{"Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"}),
+		gh.AllowedMethods([]string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"}),
+		gh.AllowedOrigins([]string{"*"}),
+		gh.AllowedOriginValidator(func(origin string) bool {
+			return true
+		}))
 
 	r.PathPrefix("/").Handler(negroni.New(negroni.Wrap(corsHandler(corsRouter))))
 	n.UseHandler(r)
@@ -168,9 +206,11 @@ func Register(extend HandlerExtender) {
 
 		go func() {
 			rr := mux.NewRouter()
+			rr.Use(MiddlewareHeaderMux)
 
 			rr.Handle("/metrics", promhttp.Handler())
 			rr.HandleFunc("/ping", Ping).Methods("GET")
+
 			rr.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 				target := fmt.Sprintf("https://%s%s", r.Host, r.URL.Path)
 				if len(r.URL.RawQuery) > 0 {
@@ -181,6 +221,8 @@ func Register(extend HandlerExtender) {
 			})
 
 			nr := negroni.Classic()
+			nr.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+
 			nr.UseHandler(rr)
 
 			redirectServer := http.Server{
