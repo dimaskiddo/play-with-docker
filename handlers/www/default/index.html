@@ -117,7 +117,7 @@
               </div>
             </md-card-content>
             <md-card-actions>
-              <md-button class="md-raised" ng-click="openEditor(instance)">
+              <md-button class="md-primary md-raised" ng-click="openEditor(instance)">
                 <md-icon class="material-icons">insert_drive_file</md-icon> File Editor
               </md-button>
               <settings-icon></settings-icon>
@@ -234,6 +234,59 @@
         <span flex></span>
         <md-button ng-click="$ctrl.close()">
           Close
+        </md-button>
+      </md-dialog-actions>
+    </script>
+    <script type="text/ng-template" id="instance-modal.html">
+      <md-toolbar>
+        <div class="md-toolbar-tools">
+          <h2>Create New Instance</h2>
+          <span flex></span>
+          <md-button class="md-icon-button" ng-click="$ctrl.close()">
+            <md-icon class="material-icon" aria-label="Close dialog">close</md-icon>
+          </md-button>
+        </div>
+      </md-toolbar>
+      <md-dialog-content>
+        <div class="md-dialog-content" style="width:500px; padding: 20px;">
+          <div layout="column">
+            <md-item-template>
+              <span class="item-title">
+                <md-icon class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 8px;">archive</md-icon>
+                <span md-highlight-text="$ctrl.searchText" md-highlight-flags="i">{{image}}</span>
+              </span>
+            </md-item-template>
+            <div layout="row" layout-align="space-between center">
+              <div flex="48">
+                <md-input-container class="md-block">
+                  <label>CPU Limit (cores)</label>
+                  <input type="number" ng-model="$ctrl.cpuLimit" min="0.5" max="4" step="0.5" required>
+                  <div class="hint">Max: 4 Cores</div>
+                </md-input-container>
+              </div>
+              <div flex="48">
+                <md-input-container class="md-block">
+                  <label>Memory Limit (MB)</label>
+                  <input type="number" ng-model="$ctrl.memoryLimit" min="512" max="8192" step="512" required>
+                  <div class="hint">Max: 8192 MB (8 GB)</div>
+                </md-input-container>
+              </div>
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+              <p style="margin: 0; font-size: 12px; color: #666;">
+                <strong>Note:</strong> Resource limits help ensure fair usage. Choose appropriate values based on your workload requirements.
+              </p>
+            </div>
+          </div>
+        </div>
+      </md-dialog-content>
+      <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button ng-click="$ctrl.close()">
+          Cancel
+        </md-button>
+        <md-button ng-click="$ctrl.create()" class="md-primary md-raised" ng-disabled="!$ctrl.selectedImage || !$ctrl.cpuLimit || !$ctrl.memoryLimit">
+          Create
         </md-button>
       </md-dialog-actions>
     </script>

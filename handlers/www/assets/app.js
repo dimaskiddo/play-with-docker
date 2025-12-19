@@ -19,6 +19,44 @@
     }
   }
 
+  function InstanceCreationModalController($mdDialog, sessionId, instanceType, upsertInstance, showAlert) {
+    var $controller = this;
+    
+    $controller.selectedImage = InstanceService.getDesiredImage();
+    $controller.limitCPU = 1;
+    $controller.limitMemory = 2048;
+
+    $controller.close = function() {
+      $mdDialog.cancel();
+    }
+
+    $controller.create = function() {
+      updateNewInstanceBtnState(true);
+      $mdDialog.hide();
+
+      $http({
+        method: 'POST',
+        url: '/sessions/' + sessionId + '/instances',
+        data : { 
+          ImageName: $controller.selectedImage, 
+          type: instanceType,
+          LimitCPU: $controller.cpuLimit,
+          LimitMemory: $controller.memoryLimit
+        }
+      }).then(function(response) {
+        upsertInstance(response.data);
+      }, function(response) {
+        if (response.status == 409) {
+          showAlert('Max instances reached', 'Maximum number of instances reached')
+        } else if (response.status == 503 && response.data.error == 'out_of_capacity') {
+          showAlert('Out Of Capacity', 'We are really sorry. But we are currently out of capacity and cannot create new instances. Please try again later.')
+        }
+      }).finally(function() {
+        updateNewInstanceBtnState(false);
+      })
+    }
+  }
+
   app.controller('PlayController', ['$scope', '$rootScope', '$log', '$http', '$location', '$timeout', '$mdDialog', '$window', 'TerminalService', 'KeyboardShortcutService', 'InstanceService', 'SessionService', 'Upload', function ($scope, $rootScope, $log, $http, $location, $timeout, $mdDialog, $window, TerminalService, KeyboardShortcutService, InstanceService, SessionService, Upload) {
     $scope.sessionId = SessionService.getCurrentSessionId();
     $rootScope.instances = [];
@@ -162,23 +200,19 @@
     }
 
     $scope.newInstance = function () {
-      updateNewInstanceBtnState(true);
-      var instanceType = $scope.type.windows ? 'windows' : 'linux';
-      $http({
-        method: 'POST',
-        url: '/sessions/' + $scope.sessionId + '/instances',
-        data: { ImageName: InstanceService.getDesiredImage(), type: instanceType }
-      }).then(function (response) {
-        $scope.upsertInstance(response.data);
-      }, function (response) {
-        if (response.status == 409) {
-          $scope.showAlert('Max instances reached', 'Maximum number of instances reached')
-        } else if (response.status == 503 && response.data.error == 'out_of_capacity') {
-          $scope.showAlert('Out Of Capacity', 'We are really sorry. But we are currently out of capacity and cannot create new instances. Please try again later.')
+      $mdDialog.show({
+        controller: InstanceCreationModalController,
+        controllerAs: '$ctrl',
+        templateUrl: 'instance-modal.html',
+        parent: angular.element(document.body),
+        clickOutsideToClose: false,
+        locals: {
+          sessionId: $scope.sessionId,
+          instanceType: 'linux',
+          upsertInstance: $scope.upsertInstance,
+          showAlert: $scope.showAlert
         }
-      }).finally(function () {
-        updateNewInstanceBtnState(false);
-      });
+      })
     }
 
     $scope.setSessionState = function (state) {
