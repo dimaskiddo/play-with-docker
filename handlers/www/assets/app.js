@@ -39,9 +39,9 @@
     function InstanceCreationModalController($mdDialog, sessionId, instanceType, upsertInstance, showAlert) {
       var $ctrl = this;
       
-      $ctrl.selectedImage = InstanceService.getDesiredImage();
-      $ctrl.limitCPU = 1;
-      $ctrl.limitMemory = 2048;
+      $ctrl.selectedImage = $scope.playground.default_instance_image;
+      $ctrl.limitCPU = $scope.playground.default_limit_cpu;
+      $ctrl.limitMemory = $scope.playground.default_limit_memory;
 
       $ctrl.close = function() {
         $mdDialog.cancel();

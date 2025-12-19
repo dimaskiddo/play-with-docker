@@ -64,9 +64,12 @@ type PlaygroundConfigurationResponse struct {
 	DindVolumeSize              string        `json:"dind_volume_size"`
 	L2Subdomain                 string        `json:"l2_subdomain"`
 	L2SSHPort                   string        `json:"l2_ssh_port"`
-	MaxLimitCPU                 float64       `json:"max_limit_cpu"`
-	MaxLimitMemory              int64         `json:"max_limit_memory"`
-	MaxLimitProcess             int64         `json:"max_limit_process"`
+	DefaultInstanceImage        string        `json:"default_instance_image"`
+	DefaultLimitCPU             string        `json:"default_limit_cpu"`
+	DefaultLimitMemory          string        `json:"default_limit_memory"`
+	MaxLimitCPU                 string        `json:"max_limit_cpu"`
+	MaxLimitMemory              string        `json:"max_limit_memory"`
+	MaxLimitProcess             string        `json:"max_limit_process"`
 }
 
 func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
@@ -88,9 +91,12 @@ func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
 		DindVolumeSize:              playground.DindVolumeSize,
 		L2Subdomain:                 config.L2Subdomain,
 		L2SSHPort:                   config.L2SSHPort,
-		MaxLimitCPU:                 config.DefaultMaxLimitCPU,
-		MaxLimitMemory:              config.DefaultMaxLimitMemory,
-		MaxLimitProcess:             config.DefaultMaxLimitProcess,
+		DefaultInstanceImage:        config.DINDImage,
+		DefaultLimitCPU:             fmt.Sprintf("%f", config.DefaultLimitCPU),
+		DefaultLimitMemory:          fmt.Sprintf("%d", config.DefaultLimitMemory),
+		MaxLimitCPU:                 fmt.Sprintf("%f", config.DefaultMaxLimitCPU),
+		MaxLimitMemory:              fmt.Sprintf("%d", config.DefaultMaxLimitMemory),
+		MaxLimitProcess:             fmt.Sprintf("%d", config.DefaultMaxLimitProcess),
 	})
 }
 

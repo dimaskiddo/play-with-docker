@@ -239,17 +239,17 @@
           <div layout="column">
             <md-input-container class="md-icon-float md-block" flex-gt-sm>
               <label>Instance Image</label>
-              <input ng-model="$ctrl.selectedImage" type="text" value="$ctrl.selectedImage" ng-trim>
+              <input ng-model="$ctrl.selectedImage" type="text" value="{{playground.default_instance_image}}" ng-trim required>
             </md-input-container>
             <div layout="row" layout-align="space-between center">
               <md-input-container class="md-block" flex-gt-sm>
                 <label>CPU</label>
-                <input type="number" ng-model="$ctrl.limitCPU" min="0.5" max="{{playground.max_limit_cpu}}" step="0.5" required>
+                <input type="number" ng-model="$ctrl.limitCPU" value="{{playground.default_limit_cpu}}" min="0.5" max="{{playground.max_limit_cpu}}" step="0.5" required>
                 <div class="hint">Max: {{playground.max_limit_cpu}} Core(s)</div>
               </md-input-container>
               <md-input-container class="md-block" flex-gt-sm>
                 <label>Memory</label>
-                <input type="number" ng-model="$ctrl.limitMemory" min="512" max="{{playground.max_limit_memory}}" step="512" required>
+                <input type="number" ng-model="$ctrl.limitMemory" value="{{playground.default_limit_memory}}" min="512" max="{{playground.max_limit_memory}}" step="512" required>
                 <div class="hint">Max: {{playground.max_limit_memory}} MB</div>
               </md-input-container>
             </div>
