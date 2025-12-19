@@ -46,7 +46,7 @@
           $scope.uploadProgress = 0;
           return
         }
-  
+
         $scope.uploadMessage = "Uploading file(s) " + (total - files.length) + "/" + total + " : " + file.name;
         let upload = Upload.upload({ url: '/sessions/' + $scope.sessionId + '/instances/' + $rootScope.selectedInstance.name + '/uploads', data: { file: file }, method: 'POST' })
           .then(function () { }, function () { }, function (evt) {
@@ -59,19 +59,19 @@
       uploadFile();
     }
 
-    $scope.downloadKey = function(instance) {
+    $scope.downloadKey = function (instance) {
       $http({
         method: 'GET',
         url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name + '/download-key',
         withCredentials: true,
         responseType: 'arraybuffer'
-      }).then(function(response) {
-        var blob = new Blob([response], {type: 'application/octet-stream'});
+      }).then(function (response) {
+        var blob = new Blob([response.data], { type: 'application/octet-stream' });
         var downloadUrl = window.URL.createObjectURL(blob);
         var a = document.createElement('a');
-        
+
         a.href = downloadUrl;
-        a.download = 'keyfile_' + $scope.sessionId + '_' + instance.hoatname + '.pem';
+        a.download = 'keyfile_' + $scope.sessionId + '_' + instance.hostname + '.pem';
         a.style.display = 'none';
 
         document.body.appendChild(a);
@@ -132,14 +132,14 @@
         method: 'POST',
         url: '/sessions/' + $scope.sessionId + '/close',
         withCredentials: true
-      }).then(function(response) {
+      }).then(function (response) {
         $scope.currentUser = null;
-        setTimeout(function() {
+        setTimeout(function () {
           $window.location.href = '/';
         }, 100);
-      }, function(error) {
+      }, function (error) {
         $scope.currentUser = null;
-        setTimeout(function() {
+        setTimeout(function () {
           $window.location.href = '/';
         }, 100);
       });
@@ -151,6 +151,7 @@
       if (!$scope.idx[i.name]) {
         $rootScope.instances.push(i);
         i.buffer = '';
+        
         $scope.idx[i.name] = i;
         $scope.idxByHostname[i.hostname] = i;
       } else {
@@ -330,21 +331,8 @@
 
         socket.on('session end', function () {
           $scope.showAlert('Session timed out!', 'Your session has expired and all of your instances have been deleted.', '#sessionEnd', function () {
-            $http({
-              method: 'POST',
-              url: '/sessions/' + $scope.sessionId + '/close',
-              withCredentials: true
-            }).then(function(response) {
-              $scope.currentUser = null;
-              setTimeout(function() {
-                $window.location.href = '/';
-              }, 100);
-            }, function(error) {
-              $scope.currentUser = null;
-              setTimeout(function() {
-                $window.location.href = '/';
-              }, 100);
-            });
+            $scope.socket.emit('session close');
+            $window.location.href = '/';
           });
 
           $scope.isAlive = false;
@@ -426,6 +414,7 @@
           if (!$scope.idx[status.instance]) {
             return
           }
+
           $scope.idx[status.instance].ports = status.ports;
           $scope.$apply();
         });
@@ -437,6 +426,7 @@
               $scope.idxByHostname[instance].swarmPorts = status.ports;
             }
           }
+
           $scope.$apply();
         });
 
@@ -474,16 +464,20 @@
     $scope.showInstance = function (instance) {
       $rootScope.selectedInstance = instance;
       $location.hash(instance.name);
+
       if (!instance.term) {
         $timeout(function () {
           createTerminal(instance);
+
           TerminalService.setFontSize(TerminalService.getFontSize());
           instance.term.focus();
+
           $timeout(function () {
           }, 0, false);
         }, 0, false);
         return
       }
+
       instance.term.focus();
     }
 
@@ -511,16 +505,16 @@
         .ok('Delete')
         .cancel('Cancel');
 
-      $mdDialog.show(confirm).then(function() {
+      $mdDialog.show(confirm).then(function () {
         updateDeleteInstanceBtnState(true);
         $http({
           method: 'DELETE',
           url: '/sessions/' + $scope.sessionId + '/instances/' + instance.name,
-        }).then(function(response) {
+        }).then(function (response) {
           $scope.removeInstance(instance.name);
-        }, function(response) {
+        }, function (response) {
           console.log('error', response);
-        }).finally(function() {
+        }).finally(function () {
           updateDeleteInstanceBtnState(false);
         });
       });
@@ -529,6 +523,7 @@
     $scope.openEditor = function (instance) {
       var w = window.screen.availWidth * 45 / 100;
       var h = window.screen.availHeight * 45 / 100;
+
       $window.open('/sessions/' + instance.session_id + '/instances/' + instance.name + '/editor', 'editor',
         'width=' + w + ',height=' + h + ',resizable,scrollbars=yes,status=1');
     };
@@ -569,7 +564,6 @@
       };
 
       term.attachCustomKeyEventHandler(function (e) {
-        // handleCopy(e);
         if (selectedKeyboardShortcuts == null) return;
 
         var presets = selectedKeyboardShortcuts.presets
@@ -635,6 +629,7 @@
       template: "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>settings</md-icon></md-button>",
       controller: function ($mdDialog) {
         var $ctrl = this;
+
         $ctrl.onClick = function () {
           $mdDialog.show({
             controller: function () { },
@@ -649,6 +644,7 @@
       template: "<md-button class='md-mini' ng-click='$ctrl.onClick()'><md-icon class='material-icons'>build</md-icon></md-button>",
       controller: function ($mdDialog) {
         var $ctrl = this;
+
         $ctrl.onClick = function () {
           $mdDialog.show({
             controller: function () { },
@@ -663,21 +659,26 @@
       templateUrl: "templates-modal.html",
       controller: function ($mdDialog, $scope, SessionService) {
         var $ctrl = this;
+
         $scope.building = false;
         $scope.templates = SessionService.getAvailableTemplates();
+
         $ctrl.close = function () {
           $mdDialog.cancel();
         }
+
         $ctrl.setupSession = function (setup) {
           $scope.building = true;
           SessionService.setup(setup, function (err) {
             $scope.building = false;
+
             if (err) {
               $scope.errorMessage = err;
               return;
             }
+
             $ctrl.close();
-          });
+          })
         }
       }
     })
@@ -685,13 +686,14 @@
       templateUrl: "settings-modal.html",
       controller: function ($mdDialog, KeyboardShortcutService, $rootScope, InstanceService, TerminalService) {
         var $ctrl = this;
+
         $ctrl.$onInit = function () {
           $ctrl.keyboardShortcutPresets = KeyboardShortcutService.getAvailablePresets();
           $ctrl.selectedShortcutPreset = KeyboardShortcutService.getCurrentShortcuts();
           $ctrl.instanceImages = InstanceService.getAvailableImages();
           $ctrl.selectedInstanceImage = InstanceService.getDesiredImage();
           $ctrl.terminalFontSizes = TerminalService.getFontSizes();
-        };
+        }
 
         $ctrl.currentShortcutConfig = function (value) {
           if (value !== undefined) {
@@ -700,18 +702,20 @@
             $ctrl.selectedShortcutPreset = angular.copy(KeyboardShortcutService.getCurrentShortcuts());
             $rootScope.$broadcast('settings:shortcutsSelected', $ctrl.selectedShortcutPreset);
           }
+
           return JSON.stringify(KeyboardShortcutService.getCurrentShortcuts());
-        };
+        }
 
         $ctrl.currentDesiredInstanceImage = function (value) {
           if (value !== undefined) {
             InstanceService.setDesiredImage(value);
           }
+
           return InstanceService.getDesiredImage(value);
-        };
+        }
+
         $ctrl.currentTerminalFontSize = function (value) {
           if (value !== undefined) {
-            // set font size
             TerminalService.setFontSize(value);
             return;
           }
@@ -725,44 +729,7 @@
       }
     })
     .service("SessionService", function ($http) {
-      var templates = [
-        {
-          title: '3 Managers and 2 Workers',
-          icon: '/assets/swarm.png',
-          setup: {
-            instances: [
-              { hostname: 'manager1', is_swarm_manager: true },
-              { hostname: 'manager2', is_swarm_manager: true },
-              { hostname: 'manager3', is_swarm_manager: true },
-              { hostname: 'worker1', is_swarm_worker: true },
-              { hostname: 'worker2', is_swarm_worker: true }
-            ]
-          }
-        },
-        {
-          title: '5 Managers and no workers',
-          icon: '/assets/swarm.png',
-          setup: {
-            instances: [
-              { hostname: 'manager1', is_swarm_manager: true },
-              { hostname: 'manager2', is_swarm_manager: true },
-              { hostname: 'manager3', is_swarm_manager: true },
-              { hostname: 'manager4', is_swarm_manager: true },
-              { hostname: 'manager5', is_swarm_manager: true }
-            ]
-          }
-        },
-        {
-          title: '1 Manager and 1 Worker',
-          icon: '/assets/swarm.png',
-          setup: {
-            instances: [
-              { hostname: 'manager1', is_swarm_manager: true },
-              { hostname: 'worker1', is_swarm_worker: true }
-            ]
-          }
-        }
-      ];
+      var templates = [];
 
       return {
         getAvailableTemplates: getAvailableTemplates,
@@ -773,9 +740,11 @@
       function getCurrentSessionId() {
         return window.location.pathname.replace('/p/', '');
       }
+
       function getAvailableTemplates() {
         return templates;
       }
+
       function setup(plan, cb) {
         return $http
           .post("/sessions/" + getCurrentSessionId() + "/setup", plan)
@@ -802,8 +771,10 @@
 
       function getDesiredImage() {
         var image = localStorage.getItem("settings.desiredImage");
+
         if (image == null)
           return instanceImages[0];
+
         return image;
       }
 
@@ -821,7 +792,6 @@
             instanceImages = response.data;
           });
       }
-
     })
     .run(function (InstanceService) { /* forcing pre-populating for now */ })
     .service("KeyboardShortcutService", ['TerminalService', function (TerminalService) {
@@ -908,8 +878,10 @@
 
         var preset = getAvailablePresets()
           .filter(function (preset) { return preset.name == shortcuts; });
+
         if (preset.length == 0)
           console.error("Unable to find preset with name '" + shortcuts + "'");
+
         return preset[0];
         return (shortcuts == null) ? null : JSON.parse(shortcuts);
       }
@@ -927,6 +899,7 @@
     .service('TerminalService', ['$window', '$rootScope', function ($window, $rootScope) {
       var fullscreen;
       var fontSize = getFontSize();
+
       return {
         getFontSizes: getFontSizes,
         setFontSize: setFontSize,
@@ -934,14 +907,18 @@
         increaseFontSize: increaseFontSize,
         decreaseFontSize: decreaseFontSize,
         toggleFullScreen: toggleFullScreen
-      };
+      }
+
       function getFontSizes() {
         var terminalFontSizes = [];
+
         for (var i = 3; i < 40; i++) {
           terminalFontSizes.push(i + 'px');
         }
+
         return terminalFontSizes;
-      };
+      }
+
       function getFontSize() {
         if ($rootScope.selectedInstance) {
           return $rootScope.selectedInstance.term.getOption("fontSize") + "px"
@@ -949,53 +926,68 @@
           return $(".terminal").css("font-size")
         }
       }
+
       function setFontSize(value) {
         const { term } = $rootScope.selectedInstance;
+
         fontSize = value;
         var size = parseInt(value);
+
         term.setOption("fontSize", size)
         term.resize(1, 1)
         term.fit()
       }
+
       function increaseFontSize() {
         var sizes = getFontSizes();
         var size = getFontSize();
         var i = sizes.indexOf(size);
+
         if (i == -1) {
           return;
         }
+
         if (i + 1 > sizes.length) {
           return;
         }
+
         setFontSize(sizes[i + 1]);
       }
+
       function decreaseFontSize() {
         var sizes = getFontSizes();
         var size = getFontSize();
         var i = sizes.indexOf(size);
+
         if (i == -1) {
           return;
         }
+
         if (i - 1 < 0) {
           return;
         }
+
         setFontSize(sizes[i - 1]);
       }
+
       function toggleFullScreen(terminal, resize) {
         if (fullscreen) {
           terminal.toggleFullScreen();
           terminal.containerElement.append(terminal.element)
+
           setTimeout(() => {
             terminal.resize(1, 1);
             terminal.fit();
             terminal.focus();
           }, 100)
+
           fullscreen = null;
         } else {
-          // save the current parent
           terminal.containerElement = $(terminal.element).parent()
+
           $("body").append(terminal.element)
           fullscreen = terminal.proposeGeometry();
+
           terminal.toggleFullScreen();
           terminal.fit();
           terminal.focus();

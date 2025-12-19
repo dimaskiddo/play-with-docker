@@ -79,7 +79,7 @@ func ParseFlags() {
 	flag.StringVar(&L2Subdomain, "l2-subdomain", GetEnvString("PWD_L2_SUBDOMAIN", "apps"), "L2 Router Subdomain for Ingress")
 	flag.StringVar(&L2SSHPort, "l2-ssh-port", GetEnvString("PWD_L2_SSH_PORT", "2222"), "L2 Router Custom SSH Port")
 
-	flag.StringVar(&SessionsFile, "session-file", GetEnvString("PWD_SESSION_FILE", "./sessions/session"), "Path Where Session File will be Stored")
+	flag.StringVar(&SessionsFile, "session-file", GetAbsoultePath(GetEnvString("PWD_SESSION_FILE", "./sessions/session")), "Path Where Session File will be Stored")
 	flag.StringVar(&SessionDuration, "max-session-duration", GetEnvString("PWD_MAX_SESSION_DURATION", "4h"), "Maximum Session Duration Per-User")
 
 	flag.StringVar(&DINDImage, "dind-image-name", GetEnvString("PWD_DIND_IMAGE_NAME", "franela/dind:latest"), "Docker-in-Docker (DIND) Image Name")
@@ -98,17 +98,17 @@ func ParseFlags() {
 	flag.StringVar(&CookieHashKey, "cookies-key-hash", GetEnvString("PWD_COOKIES_KEY_HASH", ""), "Cookies Validation Hash Key")
 	flag.StringVar(&CookieBlockKey, "cookies-key-encrypt", GetEnvString("PWD_COOKIES_KEY_ENCRYPT", ""), "Cookies Encryption Key")
 
-	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetEnvString("PWD_SSH_KEY_FILE", "./ssh_host_rsa_key"), "SSH Private Key to Use")
+	flag.StringVar(&SSHKeyPath, "ssh-key-file", GetAbsoultePath(GetEnvString("PWD_SSH_KEY_FILE", "./ssh_host_rsa_key")), "SSH Private Key to Use")
 
 	flag.BoolVar(&UseLetsEncrypt, "letsencrypt-enable", GetEnvBool("PWD_LETS_ENCRYPT_ENABLE", false), "Enabled Let's Encrypt for TLS Certificates")
-	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs"), "Path Where Let's Encrypt Certificates Will be Stored")
+	flag.StringVar(&LetsEncryptCertsDir, "letsencrypt-certs-dir", GetAbsoultePath(GetEnvString("PWD_LETS_ENCRYPT_CERTS_DIR", "./certs")), "Path Where Let's Encrypt Certificates Will be Stored")
 
 	flag.BoolVar(&NoWindows, "windows-disable", GetEnvBool("PWD_WINDOWS_DISABLE", true), "Disable Windows Instances Support")
 
 	flag.BoolVar(&ForceTLS, "docker-use-tls", GetEnvBool("PWD_DOCKER_USE_TLS", false), "Force TLS Connection to Docker Daemons")
 	flag.BoolVar(&ExternalDindVolume, "docker-use-ext-volume", GetEnvBool("PWD_DOCKER_USE_EXTERNAL_VOLUME", false), "Use DIND External Volume Through XFS Volume Driver")
 	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
-	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "/data/play-with-docker"), "DIND External Data Directory to Store Persistent Data in /data Path")
+	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetAbsoultePath(GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "/data/play-with-docker")), "DIND External Data Directory to Store Persistent Data in /data Path")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")

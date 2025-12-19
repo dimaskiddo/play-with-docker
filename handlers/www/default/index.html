@@ -103,14 +103,14 @@
                 </md-input-container>
               </div>
               <div layout-gt-sm="row">
-                <md-input-container>
+                <md-input-container class="md-block" flex-gt-sm>
                   <label>SSH</label>
-                  <input value="ssh -i keyfile_{{instance.hostname}}_{{id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="80">
-                  <md-icon ngclipboard data-clipboard-text="ssh -i keyfile_{{instance.hostname}}_{{id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
+                  <input value="ssh -i keyfile_{{instance.hostname}}_{{instance.session_id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" type="text" readonly="readonly" size="75">
+                  <md-icon ngclipboard data-clipboard-text="ssh -i keyfile_{{instance.hostname}}_{{instance.session_id}}.pem {{instance.proxy_host}}@{{playground.l2_subdomain}}.{{playground.domain}} -p {{playground.l2_ssh_port}}" class="material-icons">content_copy
                     <md-tooltip md-direction="top">Copy!</md-tooltip>
                   </md-icon>
                   <md-button class="md-raised" ng-click="downloadKey(instance)">
-                    <md-icon class="material-icons">vpn_key</md-icon> Download SSH Key
+                    <md-icon class="material-icons">vpn_key</md-icon>
                   </md-button>
                 </md-input-container>
                 <div class="md-block" glex-gt-sm></div>

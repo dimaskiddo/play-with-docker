@@ -173,6 +173,7 @@ func ws(so *socket) {
 	go m.Receive(func(name string, data []byte) {
 		so.Emit("instance terminal out", name, string(data))
 	})
+
 	go m.Status(func(name, status string) {
 		so.Emit("instance terminal status", name, status)
 	})

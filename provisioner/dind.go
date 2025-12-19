@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -91,11 +90,7 @@ func (d *DinD) InstanceNew(session *types.Session, conf types.InstanceConfig) (*
 		return nil, err
 	}
 
-	userVolumePath, err := d.GetUserVolumePath(session)
-	if err != nil {
-		log.Printf("Error getting user data directory: %v\n", err)
-		userVolumePath = ""
-	}
+	userVolumePath := config.GetAbsoultePath(filepath.Join(config.ExternalDataDir, session.Id))
 
 	opts := docker.CreateContainerOpts{
 		Image:          conf.ImageName,
@@ -358,53 +353,4 @@ func (d *DinD) InstanceUploadFromReader(instance *types.Instance, fileName, dest
 	}
 
 	return nil
-}
-
-func (d *DinD) GetUserVolumePath(session *types.Session) (string, error) {
-	path, err := absUserVolumePath(session)
-	if err != nil {
-		return "", nil
-	}
-
-	log.Printf("Get Host bind mount path for user %s: %s\n", session.Id, path)
-
-	return path, nil
-}
-
-func (d *DinD) DeleteUserVolumePath(session *types.Session) error {
-	path, err := absUserVolumePath(session)
-	if err != nil {
-		return err
-	}
-
-	err = os.RemoveAll(path)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func absUserVolumePath(session *types.Session) (string, error) {
-	if session.Id == "" {
-		log.Printf("Error getting volume path: user session id not found")
-		return "", nil
-	}
-
-	baseDataDir := config.ExternalDataDir
-	if baseDataDir == "" {
-		baseDataDir = "/data/play-with-docker"
-	}
-
-	userDataPath := filepath.Join(baseDataDir, session.Id)
-	if !filepath.IsAbs(userDataPath) {
-		absPath, err := filepath.Abs(userDataPath)
-		if err != nil {
-			log.Printf("Error getting absolute path for %s: %v\n", userDataPath, err)
-		} else {
-			userDataPath = absPath
-		}
-	}
-
-	return userDataPath, nil
 }

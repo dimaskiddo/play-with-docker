@@ -28,9 +28,6 @@ type InstanceProvisionerApi interface {
 
 	InstanceUploadFromUrl(instance *types.Instance, fileName, dest, url string) error
 	InstanceUploadFromReader(instance *types.Instance, fileName, dest string, reader io.Reader) error
-
-	GetUserVolumePath(session *types.Session) (string, error)
-	DeleteUserVolumePath(session *types.Session) error
 }
 
 type SessionProvisionerApi interface {

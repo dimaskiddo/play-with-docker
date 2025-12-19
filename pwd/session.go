@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"path"
 	"path/filepath"
 	"sync"
@@ -13,6 +14,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/docker"
 	"github.com/dimaskiddo/play-with-docker/event"
 	"github.com/dimaskiddo/play-with-docker/pwd/types"
@@ -137,12 +139,13 @@ func (p *pwd) SessionClose(s *types.Session) error {
 		return err
 	}
 
-	if err := p.dindProvisioner.DeleteUserVolumePath(s); err != nil {
-		log.Println(err)
-	}
+	if p.dindProvisioner != nil {
+		userVolumePath := config.GetAbsoultePath(filepath.Join(config.ExternalDataDir, s.Id))
 
-	if err := p.windowsProvisioner.DeleteUserVolumePath(s); err != nil {
-		log.Println(err)
+		err = os.RemoveAll(userVolumePath)
+		if err != nil {
+			log.Printf("Error while removing user volume data %s: %v", userVolumePath, err)
+		}
 	}
 
 	if err := p.sessionProvisioner.SessionClose(s); err != nil {

@@ -280,16 +280,6 @@ func (d *windows) InstanceUploadFromReader(instance *types.Instance, fileName, d
 	return nil
 }
 
-func (d *windows) GetUserVolumePath(session *types.Session) (string, error) {
-	// TODO Implement
-	return "", nil
-}
-
-func (d *windows) DeleteUserVolumePath(session *types.Session) error {
-	// TODO Implement
-	return nil
-}
-
 func (d *windows) getWindowsInstanceInfo(sessionId string) (*instanceInfo, error) {
 	input := &autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{aws.String("pwd-windows")},
