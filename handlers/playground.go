@@ -64,6 +64,9 @@ type PlaygroundConfigurationResponse struct {
 	DindVolumeSize              string        `json:"dind_volume_size"`
 	L2Subdomain                 string        `json:"l2_subdomain"`
 	L2SSHPort                   string        `json:"l2_ssh_port"`
+	MaxLimitCPU                 float64       `json:"max_limit_cpu"`
+	MaxLimitMemory              int64         `json:"max_limit_memory"`
+	MaxLimitProcess             int64         `json:"max_limit_process"`
 }
 
 func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
@@ -85,6 +88,9 @@ func GetCurrentPlayground(rw http.ResponseWriter, req *http.Request) {
 		DindVolumeSize:              playground.DindVolumeSize,
 		L2Subdomain:                 config.L2Subdomain,
 		L2SSHPort:                   config.L2SSHPort,
+		MaxLimitCPU:                 config.DefaultMaxLimitCPU,
+		MaxLimitMemory:              config.DefaultMaxLimitMemory,
+		MaxLimitProcess:             config.DefaultMaxLimitProcess,
 	})
 }
 

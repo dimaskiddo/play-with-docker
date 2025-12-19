@@ -32,18 +32,16 @@
     $scope.type = { windows: false };
     $scope.isInstanceBeingCreated = false;
     $scope.newInstanceBtnText = '+ Add New Instance';
-    $scope.deleteInstanceBtnText = 'Delete';
+    $scope.deleteInstanceBtnText = 'Delete Instance';
     $scope.isInstanceBeingDeleted = false;
     $scope.uploadProgress = 0;
 
     function InstanceCreationModalController($mdDialog, sessionId, instanceType, upsertInstance, showAlert) {
       var $ctrl = this;
       
-      $ctrl.$onInit = function () {      
-        $ctrl.selectedImage = InstanceService.getDesiredImage();
-        $ctrl.limitCPU = 1;
-        $ctrl.limitMemory = 2048;
-      }
+      $ctrl.selectedImage = InstanceService.getDesiredImage();
+      $ctrl.limitCPU = 1;
+      $ctrl.limitMemory = 2048;
 
       $ctrl.close = function() {
         $mdDialog.cancel();
@@ -723,18 +721,17 @@
       controller: function ($mdDialog, KeyboardShortcutService, $rootScope, InstanceService, TerminalService) {
         var $ctrl = this;
 
-        $ctrl.$onInit = function () {
-          $ctrl.keyboardShortcutPresets = KeyboardShortcutService.getAvailablePresets();
-          $ctrl.selectedShortcutPreset = KeyboardShortcutService.getCurrentShortcuts();
-          $ctrl.instanceImages = InstanceService.getAvailableImages();
-          $ctrl.selectedInstanceImage = InstanceService.getDesiredImage();
-          $ctrl.terminalFontSizes = TerminalService.getFontSizes();
-        }
+        $ctrl.keyboardShortcutPresets = KeyboardShortcutService.getAvailablePresets();
+        $ctrl.selectedShortcutPreset = KeyboardShortcutService.getCurrentShortcuts();
+        $ctrl.instanceImages = InstanceService.getAvailableImages();
+        $ctrl.selectedInstanceImage = InstanceService.getDesiredImage();
+        $ctrl.terminalFontSizes = TerminalService.getFontSizes();
 
         $ctrl.currentShortcutConfig = function (value) {
           if (value !== undefined) {
             value = JSON.parse(value);
             KeyboardShortcutService.setCurrentShortcuts(value);
+
             $ctrl.selectedShortcutPreset = angular.copy(KeyboardShortcutService.getCurrentShortcuts());
             $rootScope.$broadcast('settings:shortcutsSelected', $ctrl.selectedShortcutPreset);
           }
@@ -847,10 +844,16 @@
       function getAvailablePresets() {
         return [
           {
-            name: "None",
+            name: "Default",
             presets: [
               {
-                description: "Toggle terminal fullscreen", command: "Alt+enter", altKey: true, keyCode: 13, action: function (context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); }
+                description: "Toggle terminal fullscreen",
+                command: "Alt+Enter",
+                altKey: true,
+                keyCode: 13,
+                action: function (context) {
+                  TerminalService.toggleFullScreen(context.terminal, resizeFunc);
+                }
               },
               {
                 description: "Increase Font Size",
@@ -875,10 +878,26 @@
             ]
           },
           {
-            name: "Mac OSX",
+            name: "MacOS",
             presets: [
-              { description: "Clear terminal", command: "Cmd+K", metaKey: true, keyCode: 75, action: function (context) { context.terminal.clear(); } },
-              { description: "Toggle terminal fullscreen", command: "Alt+enter", altKey: true, keyCode: 13, action: function (context) { TerminalService.toggleFullScreen(context.terminal, resizeFunc); } },
+              {
+                description: "Clear terminal",
+                command: "Cmd+K",
+                metaKey: true,
+                keyCode: 75, action:
+                function (context) {
+                  context.terminal.clear();
+                }
+              },
+              {
+                description: "Toggle terminal fullscreen",
+                command: "Alt+Enter",
+                altKey: true,
+                keyCode: 13,
+                action: function (context) {
+                  TerminalService.toggleFullScreen(context.terminal, resizeFunc); 
+                } 
+              },
               {
                 description: "Increase Font Size",
                 command: "Cmd++",
@@ -928,8 +947,8 @@
 
       function getDefaultShortcutPrefixName() {
         if (window.navigator.platform.toUpperCase().indexOf('MAC') >= 0)
-          return "Mac OSX";
-        return "None";
+          return "MacOS";
+        return "Default";
       }
     }])
     .service('TerminalService', ['$window', '$rootScope', function ($window, $rootScope) {

@@ -34,12 +34,12 @@ var (
 	// Unsafe enables a number of unsafe features when set. It is principally
 	// intended to be used in development. For example, it allows the caller to
 	// specify the Docker networks to join.
-	UseLetsEncrypt, ForceTLS, ExternalDindVolume, AlwaysPull, NoWindows, Unsafe bool
-	ExternalDindVolumeSize, ExternalDataDir                                     string
-	DefaultLimitCPUCore, DefaultMaxCPUCore, MaxLoadAvg                          float64
-	DefaultLimitMemory, DefaultMaxMemory                                        int64
-	DefaultMaxPIDs                                                              int64
-	SecureCookie                                                                *securecookie.SecureCookie
+	UseLetsEncrypt, ForceTLS, ExternalDindVolume, NoOOMKill, NoWindows, Unsafe bool
+	ExternalDindVolumeSize, ExternalDataDir                                    string
+	DefaultLimitCPU, DefaultMaxLimitCPU, MaxLoadAvg                            float64
+	DefaultLimitMemory, DefaultMaxLimitMemory                                  int64
+	DefaultMaxLimitProcess                                                     int64
+	SecureCookie                                                               *securecookie.SecureCookie
 )
 
 var (
@@ -85,12 +85,12 @@ func ParseFlags() {
 	flag.StringVar(&DINDImage, "dind-image-name", GetEnvString("PWD_DIND_IMAGE_NAME", "franela/dind:latest"), "Docker-in-Docker (DIND) Image Name")
 	flag.StringVar(&DINDAppArmor, "dind-apparmor-profile", GetEnvString("PWD_DIND_APPARMOR_PROFILE", ""), "Docker-in-Docker (DIND) AppArmor Profile Name")
 
-	flag.Float64Var(&DefaultLimitCPUCore, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
-	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 2048), "Default Resource Limit for Memory")
+	flag.Float64Var(&DefaultLimitCPU, "default-limit-cpu", GetEnvFloat64("PWD_DEFAULT_LIMIT_CPU", 1.0), "Default Resource Limit for CPU Core")
+	flag.Int64Var(&DefaultLimitMemory, "default-limit-memory", GetEnvInt64("PWD_DEFAULT_LIMIT_MEMORY", 1024), "Default Resource Limit for Memory")
 
-	flag.Float64Var(&DefaultMaxCPUCore, "default-max-cpu", GetEnvFloat64("PWD_DEFAULT_MAX_CPU", 4.0), "Default Maximum Limit for CPU Core")
-	flag.Int64Var(&DefaultMaxMemory, "default-max-memory", GetEnvInt64("PWD_DEFAULT_MAX_MEMORY", 8192), "Default Maximum Limit for Memory")
-	flag.Int64Var(&DefaultMaxPIDs, "default-max-process", GetEnvInt64("PWD_DEFAULT_MAX_PROCESS", 1000), "Default Maximum Limit for Processes")
+	flag.Float64Var(&DefaultMaxLimitCPU, "default-max-limit-cpu", GetEnvFloat64("PWD_DEFAULT_MAX_LIMIT_CPU", 4.0), "Default Maximum Limit for CPU Core")
+	flag.Int64Var(&DefaultMaxLimitMemory, "default-max-limit-memory", GetEnvInt64("PWD_DEFAULT_MAX_LIMIT_MEMORY", 8192), "Default Maximum Limit for Memory")
+	flag.Int64Var(&DefaultMaxLimitProcess, "default-max-limit-process", GetEnvInt64("PWD_DEFAULT_MAX_LIMIT_PROCESS", 1000), "Default Maximum Limit for Processes")
 
 	flag.Float64Var(&MaxLoadAvg, "max-load-avg", GetEnvFloat64("PWD_MAX_LOAD_AVG", 100), "Maximum Allowed Load Average Before Failing Ping Requests")
 
@@ -109,8 +109,8 @@ func ParseFlags() {
 	flag.StringVar(&ExternalDindVolumeSize, "docker-ext-volume-size", GetEnvString("PWD_DOCKER_EXTERNAL_VOLUME_SIZE", ""), "DIND External Volume Size")
 	flag.StringVar(&ExternalDataDir, "docker-ext-data-dir", GetAbsoultePath(GetEnvString("PWD_DOCKER_EXTERNAL_DATA_DIR", "/data/play-with-docker")), "DIND External Data Directory to Store Persistent Data in /data Path")
 
-	flag.BoolVar(&AlwaysPull, "docker-always-pull-image", GetEnvBool("PWD_DOCKER_ALWAYS_PULL_IMAGE", false), "Docker Always Pull Image Even Image Already Exist")
-	flag.BoolVar(&NoWindows, "docker-windows-support", !GetEnvBool("PWD_DOCKER_WINDOWS_SUPPORT", false), "Docker for Windows Instances Support")
+	flag.BoolVar(&NoOOMKill, "docker-enable-oom-kill", !GetEnvBool("PWD_DOCKER_ENABLE_OOM_KILL", false), "Docker Support for Out-Of-Memory (OOM) Killer")
+	flag.BoolVar(&NoWindows, "docker-enable-windows-support", !GetEnvBool("PWD_DOCKER_ENABLE_WINDOWS_SUPPORT", false), "Docker Support for Windows Instances")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")

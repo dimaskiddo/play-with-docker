@@ -332,13 +332,13 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		h.StorageOpt = map[string]string{"size": config.ExternalDindVolumeSize}
 	}
 
-	var pidsLimit = config.DefaultMaxPIDs
+	var pidsLimit = config.DefaultMaxLimitProcess
 	h.Resources.PidsLimit = &pidsLimit
 
-	cpuLimit := config.DefaultLimitCPUCore
+	cpuLimit := config.DefaultLimitCPU
 	if opts.LimitCPU > 0 {
-		if opts.LimitCPU > config.DefaultMaxCPUCore {
-			opts.LimitCPU = config.DefaultMaxCPUCore
+		if opts.LimitCPU > config.DefaultMaxLimitCPU {
+			opts.LimitCPU = config.DefaultMaxLimitCPU
 		}
 
 		cpuLimit = opts.LimitCPU
@@ -361,8 +361,8 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 
 	memoryLimit := config.DefaultLimitMemory * Megabyte
 	if opts.LimitMemory > 0 {
-		if opts.LimitMemory > config.DefaultMaxMemory {
-			opts.LimitMemory = config.DefaultMaxMemory
+		if opts.LimitMemory > config.DefaultMaxLimitMemory {
+			opts.LimitMemory = config.DefaultMaxLimitMemory
 		}
 
 		memoryLimit = opts.LimitMemory * Megabyte
@@ -373,8 +373,7 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		log.Printf("Setting memory limit to %d MB for container %s\n", memoryLimit/Megabyte, opts.ContainerName)
 	}
 
-	t := true
-	h.Resources.OomKillDisable = &t
+	h.Resources.OomKillDisable = &config.NoOOMKill
 
 	cf := &container.Config{
 		Hostname:     opts.Hostname,
@@ -382,8 +381,8 @@ func (d *docker) ContainerCreate(opts CreateContainerOpts) (err error) {
 		Tty:          true,
 		OpenStdin:    true,
 		AttachStdin:  true,
-		AttachStdout: true,
-		AttachStderr: true,
+		AttachStdout: false,
+		AttachStderr: false,
 		Env:          env,
 		Labels:       opts.Labels,
 	}
