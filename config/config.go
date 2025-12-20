@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/securecookie"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -28,7 +29,6 @@ var (
 	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain, L2SSHPort,
 	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
 	LetsEncryptCertsDir, DINDImage, DINDAppArmor, AdminToken, SegmentId string
-	RateLimitRPS, RateLimitBurst int
 )
 
 var (
@@ -40,7 +40,9 @@ var (
 	DefaultLimitCPU, DefaultMaxLimitCPU, MaxLoadAvg                            float64
 	DefaultLimitMemory, DefaultMaxLimitMemory                                  int64
 	DefaultMaxLimitProcess                                                     int64
+	RateLimitRPS, RateLimitBurst                                               int
 	SecureCookie                                                               *securecookie.SecureCookie
+	RateLimiter                                                                *rate.Limiter
 )
 
 var (
@@ -123,4 +125,5 @@ func ParseFlags() {
 	flag.Parse()
 
 	SecureCookie = securecookie.New([]byte(CookieHashKey), []byte(CookieBlockKey))
+	RateLimiter = rate.NewLimiter(rate.Limit(RateLimitRPS), RateLimitBurst)
 }

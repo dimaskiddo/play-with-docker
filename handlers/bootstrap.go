@@ -19,7 +19,6 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/oauth2"
-	"golang.org/x/time/rate"
 
 	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/event"
@@ -48,8 +47,6 @@ var embeddedFiles embed.FS
 
 var staticFiles fs.FS
 
-var rateLimiter = rate.NewLimiter(rate.Limit(config.RateLimitRPS), config.RateLimitBurst)
-
 var latencyHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name:    "pwd_handlers_duration_ms",
 	Help:    "How long it took to process a specific handler, in a specific host",
@@ -63,8 +60,22 @@ func init() {
 	staticFiles, _ = fs.Sub(embeddedFiles, "www")
 }
 
-func HandleRateLimit(w http.ResponseWriter) bool {
-	if !rateLimiter.Allow() {
+func HandleRateLimit(w http.ResponseWriter, r *http.Request) bool {
+	skipExtensions := []string{
+		".js", ".css", ".html", ".json", ".txt", ".map",
+		".png", ".jpg", ".jpeg", ".svg", ".gif", ".ico",
+		".woff", ".woff2", ".ttf", ".otf", ".eot",
+		".webmanifet",
+	}
+
+	path := strings.ToLower(r.URL.Path)
+	for _, ext := range skipExtensions {
+		if strings.HasSuffix(path, ext) {
+			return true
+		}
+	}
+
+	if !config.RateLimiter.Allow() {
 		w.WriteHeader(http.StatusTooManyRequests)
 		return false
 	}
@@ -155,9 +166,9 @@ func HeadersNoCache(w http.ResponseWriter) {
 	w.Header().Set("Expires", "0")
 }
 
-func MiddlewareHeaderMux(next http.Handler) http.Handler {
+func MiddlewareInjectionMux(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !HandleRateLimit(w) {
+		if !HandleRateLimit(w, r) {
 			return
 		}
 
@@ -169,8 +180,8 @@ func MiddlewareHeaderMux(next http.Handler) http.Handler {
 	})
 }
 
-func MiddlewareHeaderNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	if !HandleRateLimit(w) {
+func MiddlewareInjectionNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	if !HandleRateLimit(w, r) {
 		return
 	}
 
@@ -190,18 +201,16 @@ func Register(extend HandlerExtender) {
 	initPlaygrounds()
 
 	r := mux.NewRouter()
-	r.Use(MiddlewareHeaderMux)
+	r.Use(MiddlewareInjectionMux)
 
 	corsRouter := mux.NewRouter()
-	corsRouter.Use(MiddlewareHeaderMux)
+	corsRouter.Use(MiddlewareInjectionMux)
 
 	n := negroni.Classic()
-	nl := negroni.NewLogger()
-	nl.SetFormat("{{.StartTime}} | {{.RemoteAddr}} | {{.Status}} | {{.Duration}} | {{.Hostname}} | {{.Method}} | {{.Path}}")
 
 	n.Use(negroni.NewRecovery())
-	n.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
-	n.Use(nl)
+	n.Use(negroni.HandlerFunc(MiddlewareInjectionNegroni))
+	n.Use(negroni.NewLogger())
 
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/ping", Ping).Methods("GET")
@@ -304,7 +313,7 @@ func Register(extend HandlerExtender) {
 
 		go func() {
 			rr := mux.NewRouter()
-			rr.Use(MiddlewareHeaderMux)
+			rr.Use(MiddlewareInjectionMux)
 
 			rr.Handle("/metrics", promhttp.Handler())
 			rr.HandleFunc("/ping", Ping).Methods("GET")
@@ -319,12 +328,9 @@ func Register(extend HandlerExtender) {
 			})
 
 			nr := negroni.Classic()
-			nrl := negroni.NewLogger()
-			nrl.SetFormat("{{.StartTime}} | {{.RemoteAddr}} | {{.Status}} | {{.Duration}} | {{.Hostname}} | {{.Method}} | {{.Path}}")
-
 			nr.Use(negroni.NewRecovery())
-			nr.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
-			nr.Use(nrl)
+			nr.Use(negroni.HandlerFunc(MiddlewareInjectionNegroni))
+			nr.Use(negroni.NewLogger())
 
 			nr.UseHandler(rr)
 
