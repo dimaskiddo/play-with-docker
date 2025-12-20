@@ -3,6 +3,7 @@ module github.com/dimaskiddo/play-with-docker
 go 1.25.4
 
 require (
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/containerd/containerd v1.7.29
 	github.com/docker/docker v1.4.2-0.20200309214505-aa6a9891b09c

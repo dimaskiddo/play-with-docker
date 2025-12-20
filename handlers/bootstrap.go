@@ -9,9 +9,6 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
-	"net"
-	"strings"
-
 	"log"
 	"net/http"
 	"path"
@@ -60,138 +57,6 @@ func init() {
 	staticFiles, _ = fs.Sub(embeddedFiles, "www")
 }
 
-func HandleRateLimit(w http.ResponseWriter, r *http.Request) bool {
-	skipExtensions := []string{
-		".js", ".css", ".html", ".json", ".txt", ".map",
-		".png", ".jpg", ".jpeg", ".svg", ".gif", ".ico",
-		".woff", ".woff2", ".ttf", ".otf", ".eot",
-		".webmanifet",
-	}
-
-	path := strings.ToLower(r.URL.Path)
-	for _, ext := range skipExtensions {
-		if strings.HasSuffix(path, ext) {
-			return true
-		}
-	}
-
-	if !config.RateLimiter.Allow() {
-		w.WriteHeader(http.StatusTooManyRequests)
-		return false
-	}
-
-	return true
-}
-
-func HeaderRealIP(r *http.Request) {
-	_, port, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		port = "0"
-	}
-
-	rip := ""
-	if cfip := r.Header.Get("CF-Connecting-IP"); cfip != "" {
-		rip = cfip
-	} else if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
-		rip = xrip
-	} else if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		rip = strings.TrimSpace(strings.Split(xff, ",")[0])
-	}
-
-	if rip != "" {
-		r.RemoteAddr = net.JoinHostPort(rip, port)
-	}
-}
-
-func HeadersSecurity(w http.ResponseWriter) {
-	w.Header().Set("X-Powered-By", "Play-With-Docker (Dimas Restu H)")
-
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	w.Header().Set("X-XSS-Protection", "1; mode=block")
-	w.Header().Set("X-DNS-Prefetch-Control", "off")
-
-	w.Header().Set("Referrer-Policy", "no-referrer-when-downgrade")
-
-	cdnList := []string{
-		"https://apis.google.com",
-		"https://code.jquery.com",
-		"https://unpkg.com",
-		"https://cdn.rawgit.com",
-		"https://cdn.jsdelivr.net",
-		"https://cdnjs.cloudflare.com",
-		"https://cloudflareinsights.com",
-		"https://*.cloudflareinsights.com",
-		"https://*.cloudflare.com",
-		"https://*.googleapis.com",
-		"https://*.bootstrapcdn.com",
-		"https://*.fastly.net",
-		"https://*.fastly.io",
-	}
-
-	fontList := []string{
-		"https://unpkg.com",
-		"https://fonts.gstatic.com",
-		"https://*.cloudflare.com",
-		"https://*.bootstrapcdn.com",
-		"https://*.fastly.net",
-		"https://*.fastly.io",
-	}
-
-	imgList := []string{
-		"data:",
-		"https://*.github.io",
-		"https://*.githubusercontent.com",
-		"https://*.cloudflare.com",
-	}
-
-	cspCdn := strings.Join(cdnList, " ")
-	cspFont := strings.Join(fontList, " ")
-	cspImg := strings.Join(imgList, " ")
-
-	csp := "" +
-		"default-src 'self'; " +
-		"connect-src 'self' ws: wss: " + cspCdn + "; " +
-		"script-src 'self' 'unsafe-inline' 'unsafe-eval' " + cspCdn + "; " +
-		"style-src 'self' 'unsafe-inline' " + cspCdn + "; " +
-		"font-src 'self' " + cspFont + "; " +
-		"img-src 'self' " + cspImg + ";"
-
-	w.Header().Set("Content-Security-Policy", csp)
-}
-
-func HeadersNoCache(w http.ResponseWriter) {
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
-}
-
-func MiddlewareInjectionMux(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !HandleRateLimit(w, r) {
-			return
-		}
-
-		HeaderRealIP(r)
-		HeadersSecurity(w)
-		HeadersNoCache(w)
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func MiddlewareInjectionNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	if !HandleRateLimit(w, r) {
-		return
-	}
-
-	HeaderRealIP(r)
-	HeadersSecurity(w)
-	HeadersNoCache(w)
-
-	next(w, r)
-}
-
 func Bootstrap(c pwd.PWDApi, ev event.EventApi) {
 	core = c
 	e = ev
@@ -201,16 +66,15 @@ func Register(extend HandlerExtender) {
 	initPlaygrounds()
 
 	r := mux.NewRouter()
-	r.Use(MiddlewareInjectionMux)
+	r.Use(CustomMiddlewareMux)
 
 	corsRouter := mux.NewRouter()
-	corsRouter.Use(MiddlewareInjectionMux)
+	corsRouter.Use(CustomMiddlewareMux)
 
-	n := negroni.Classic()
+	n := negroni.New()
 
 	n.Use(negroni.NewRecovery())
-	n.Use(negroni.HandlerFunc(MiddlewareInjectionNegroni))
-	n.Use(negroni.NewLogger())
+	n.Use(negroni.HandlerFunc(CustomMiddlewareNegroni))
 
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/ping", Ping).Methods("GET")
@@ -313,7 +177,7 @@ func Register(extend HandlerExtender) {
 
 		go func() {
 			rr := mux.NewRouter()
-			rr.Use(MiddlewareInjectionMux)
+			rr.Use(CustomMiddlewareMux)
 
 			rr.Handle("/metrics", promhttp.Handler())
 			rr.HandleFunc("/ping", Ping).Methods("GET")
@@ -327,10 +191,10 @@ func Register(extend HandlerExtender) {
 				http.Redirect(rw, r, target, http.StatusMovedPermanently)
 			})
 
-			nr := negroni.Classic()
+			nr := negroni.New()
+
 			nr.Use(negroni.NewRecovery())
-			nr.Use(negroni.HandlerFunc(MiddlewareInjectionNegroni))
-			nr.Use(negroni.NewLogger())
+			nr.Use(negroni.HandlerFunc(CustomMiddlewareNegroni))
 
 			nr.UseHandler(rr)
 
