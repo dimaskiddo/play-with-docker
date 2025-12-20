@@ -50,6 +50,17 @@ func (s *socket) Request() *http.Request {
 	return s.r
 }
 
+func (s *socket) Ping() error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	if s.closed {
+		return fmt.Errorf("socket closed")
+	}
+
+	return s.c.WriteMessage(websocket.PingMessage, nil)
+}
+
 func (s *socket) Close() {
 	s.closed = true
 	s.onMessage(message{Name: "close"})
@@ -138,21 +149,33 @@ func WSH(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
+	// If we don't hear from the client in a time, the connection is considered dead
+	c.SetReadDeadline(time.Now().Add(30 * time.Second))
+
+	// Every time we get a Pong, we extend the life of the connection
+	c.SetPongHandler(func(string) error {
+		c.SetReadDeadline(time.Now().Add(30 * time.Second))
+		return nil
+	})
+
+	s := newSocket(r, c)
+
 	// Set up a Ping ticker
-	// It must be shorter than your 10s WriteTimeout
 	ticker := time.NewTicker(8 * time.Second)
 	defer ticker.Stop()
 
-	// Start a goroutine to send Pings
+	// Use the socket's internal synchronization
 	go func() {
 		for range ticker.C {
-			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if s.closed {
+				return
+			}
+			if err := s.Ping(); err != nil {
 				return
 			}
 		}
 	}()
 
-	s := newSocket(r, c)
 	ws(s)
 	s.process()
 }
