@@ -28,6 +28,7 @@ var (
 	PortNumber, PlaygroundDomain, PWDContainerName, L2ContainerName, L2RouterIP, L2Subdomain, L2SSHPort,
 	SessionsFile, SessionDuration, HashKey, CookieHashKey, CookieBlockKey, SSHKeyPath,
 	LetsEncryptCertsDir, DINDImage, DINDAppArmor, AdminToken, SegmentId string
+	RateLimitRPS, RateLimitBurst int
 )
 
 var (
@@ -111,6 +112,9 @@ func ParseFlags() {
 
 	flag.BoolVar(&NoOOMKill, "docker-enable-oom-kill", !GetEnvBool("PWD_DOCKER_ENABLE_OOM_KILL", false), "Docker Support for Out-Of-Memory (OOM) Killer")
 	flag.BoolVar(&NoWindows, "docker-enable-windows-support", !GetEnvBool("PWD_DOCKER_ENABLE_WINDOWS_SUPPORT", false), "Docker Support for Windows Instances")
+
+	flag.IntVar(&RateLimitRPS, "rate-limit-rps", GetEnvInt("PWD_RATE_LIMIT_RPS", 100), "Default Rate Limit Request per Second")
+	flag.IntVar(&RateLimitBurst, "rate-limit-burst", GetEnvInt("PWD_RATE_LIMIT_BURST", 50), "Default Rate Limit Request Burst")
 
 	flag.StringVar(&AdminToken, "admin-token", GetEnvString("PWD_ADMIN_TOKEN", ""), "Token to Validate Admin User for Admin Endpoints")
 	flag.StringVar(&SegmentId, "segment-id", GetEnvString("PWD_SEGMENT_ID", ""), "Segment ID to Post Metrics")

@@ -77,7 +77,7 @@
                 <md-input-container class="md-icon-float md-block">
                   <label>IP</label>
                   <input ng-model="instance.ip" type="text" readonly="readonly">
-                  <md-icon ngclipboard data-clipboard-text="{{instance.ip}}" ngclipboard-success="onCopySuccess(e)" class="material-icons" style="cursor: pointer;">content_copy
+                  <md-icon ngclipboard data-clipboard-text="{{instance.ip}}" ngclipboard-success="showToast(e, 'Copied to Clipboard!', 'success')" class="material-icons" style="cursor: pointer;">content_copy
                 </md-input-container>
                 <md-chips ng-model="instance.ports" name="port" readonly="true" md-removable="false">
                   <md-chip-template>
@@ -101,9 +101,10 @@
                 </md-input-container>
               </div>
               <div layout-gt-sm="row">
-                <md-input-container>
+                <md-input-container class="md-icon-float md-block" flex-gt-sm>
                   <label>URL</label>
                   <input value="{{instance.proxy_host}}.{{playground.l2_subdomain}}.{{playground.domain}}" type="text" readonly="readonly" size="50">
+                  <md-icon ngclipboard data-clipboard-text="{{instance.proxy_host}}.{{playground.l2_subdomain}}.{{playground.domain}}" ngclipboard-success="showToast(e, 'Copied to Clipboard!', 'success')" class="material-icons" style="cursor: pointer;">content_copy
                 </md-input-container>
                 <div class="md-block" glex-gt-sm></div>
               </div>

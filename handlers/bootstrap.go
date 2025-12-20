@@ -19,6 +19,7 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/oauth2"
+	"golang.org/x/time/rate"
 
 	"github.com/dimaskiddo/play-with-docker/config"
 	"github.com/dimaskiddo/play-with-docker/event"
@@ -47,6 +48,8 @@ var embeddedFiles embed.FS
 
 var staticFiles fs.FS
 
+var rateLimiter = rate.NewLimiter(rate.Limit(config.RateLimitRPS), config.RateLimitBurst)
+
 var latencyHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name:    "pwd_handlers_duration_ms",
 	Help:    "How long it took to process a specific handler, in a specific host",
@@ -58,6 +61,15 @@ type HandlerExtender func(h *mux.Router)
 func init() {
 	prometheus.MustRegister(latencyHistogramVec)
 	staticFiles, _ = fs.Sub(embeddedFiles, "www")
+}
+
+func HandleRateLimit(w http.ResponseWriter) bool {
+	if !rateLimiter.Allow() {
+		w.WriteHeader(http.StatusTooManyRequests)
+		return false
+	}
+
+	return true
 }
 
 func HeaderRealIP(r *http.Request) {
@@ -145,6 +157,10 @@ func HeadersNoCache(w http.ResponseWriter) {
 
 func MiddlewareHeaderMux(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !HandleRateLimit(w) {
+			return
+		}
+
 		HeaderRealIP(r)
 		HeadersSecurity(w)
 		HeadersNoCache(w)
@@ -154,6 +170,10 @@ func MiddlewareHeaderMux(next http.Handler) http.Handler {
 }
 
 func MiddlewareHeaderNegroni(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	if !HandleRateLimit(w) {
+		return
+	}
+
 	HeaderRealIP(r)
 	HeadersSecurity(w)
 	HeadersNoCache(w)
@@ -176,9 +196,12 @@ func Register(extend HandlerExtender) {
 	corsRouter.Use(MiddlewareHeaderMux)
 
 	n := negroni.Classic()
-	n.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+	nl := negroni.NewLogger()
+	nl.SetFormat("{{.StartTime}} | {{.RemoteAddr}} | {{.Status}} | {{.Duration}} | {{.Hostname}} | {{.Method}} | {{.Path}}")
+
 	n.Use(negroni.NewRecovery())
-	n.Use(negroni.NewLogger())
+	n.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+	n.Use(nl)
 
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/ping", Ping).Methods("GET")
@@ -296,9 +319,12 @@ func Register(extend HandlerExtender) {
 			})
 
 			nr := negroni.Classic()
-			nr.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+			nrl := negroni.NewLogger()
+			nrl.SetFormat("{{.StartTime}} | {{.RemoteAddr}} | {{.Status}} | {{.Duration}} | {{.Hostname}} | {{.Method}} | {{.Path}}")
+
 			nr.Use(negroni.NewRecovery())
-			nr.Use(negroni.NewLogger())
+			nr.Use(negroni.HandlerFunc(MiddlewareHeaderNegroni))
+			nr.Use(nrl)
 
 			nr.UseHandler(rr)
 

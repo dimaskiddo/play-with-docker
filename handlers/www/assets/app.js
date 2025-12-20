@@ -48,6 +48,7 @@
           var $ctrl = this;
           
           $ctrl.selectedImage = playground.default_dind_instance_image;
+
           $ctrl.limitCPU = playground.default_limit_cpu;
           $ctrl.limitMemory = playground.default_limit_memory;
 
@@ -85,12 +86,21 @@
           }
         }
 
-        $scope.onCopySuccess = function(e) {
+        $scope.showToast = function(e, message, type) {
+          var toastClass = '';
+
+          if (type === 'success') {
+            toastClass = 'success-toast';
+          } else if (type === 'error') {
+            toastClass = 'error-toast';
+          }
+
           $mdToast.show(
             $mdToast.simple()
-              .textContent('Copied to Clipboard!')
+              .textContent(message)
               .position('bottom right')
               .hideDelay(2000)
+              .toastClass(toastClass)
           );
 
           e.clearSelection();
